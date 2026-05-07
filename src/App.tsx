@@ -60,26 +60,36 @@ const CalendarPage = () => {
                         <Card 
                             key={visit.id} 
                             onClick={() => navigate(`/patients/${visit.patientId}/cases/${visit.caseId}`)}
-                            className="flex items-center justify-between p-4 group hover:border-blue-400 active:scale-[0.99] transition-all bg-white border-slate-200/60"
+                            className="flex flex-col sm:flex-row sm:items-center justify-between p-5 hover:border-blue-500 hover:shadow-xl hover:shadow-blue-900/5 active:scale-[0.98] transition-all duration-300 cursor-pointer group bg-white border-slate-200 rounded-[1.75rem] relative overflow-hidden"
                         >
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-slate-50 text-slate-900 border border-slate-100 rounded-2xl flex items-center justify-center font-black group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
+                            {/* Decorative hover bg */}
+                            <div className="absolute -right-10 -top-10 w-32 h-32 bg-blue-50 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                            
+                            <div className="flex items-center gap-4 relative z-10">
+                                <div className="w-14 h-14 bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200/60 rounded-[1.2rem] flex items-center justify-center text-slate-700 font-extrabold text-xl group-hover:bg-gradient-to-br group-hover:from-blue-600 group-hover:to-indigo-600 group-hover:text-white group-hover:border-blue-500 transition-all duration-300 shadow-sm shrink-0">
                                     {visit.patientName?.[0] || 'P'}
                                 </div>
-                                <div className="space-y-0.5">
-                                    <h4 className="font-extrabold text-sm text-slate-900 group-hover:text-blue-600 transition-colors">{visit.patientName || 'Patient'}</h4>
-                                    <div className="flex items-center gap-2">
-                                        <Badge variant="neutral" className="text-[8px] bg-slate-100 group-hover:bg-blue-50 group-hover:text-blue-700">Time Indexed</Badge>
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{formatDate(visit.date)}</p>
+                                <div className="space-y-1">
+                                    <h4 className="font-extrabold text-slate-900 group-hover:text-blue-700 transition-colors leading-tight tracking-tight text-base">{visit.patientName || 'Patient'}</h4>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <div className="flex items-center gap-1.5 text-slate-500 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100 group-hover:bg-blue-50 group-hover:border-blue-100 group-hover:text-blue-600 transition-colors">
+                                            <Clock flex-shrink-0 size={10} strokeWidth={3} />
+                                            <p className="text-[9px] font-black uppercase tracking-widest leading-none mt-0.5">{formatDate(visit.date)}</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-3">
-                                <div className="text-right flex flex-col items-end">
-                                    <p className="text-xs font-mono font-black text-slate-900">{formatCurrency(visit.amountPaid)}</p>
-                                    <Badge variant={visit.paymentStatus === 'Paid' ? 'success' : 'warning'}>{visit.paymentStatus}</Badge>
+                            
+                            <div className="flex items-center justify-between sm:justify-end gap-6 mt-3 sm:mt-0 relative z-10 pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                                <div className="flex flex-col sm:items-end">
+                                    <p className="text-[10px] font-mono font-black text-slate-900 tracking-tight leading-none mb-1.5">{formatCurrency(visit.amountPaid)}</p>
+                                    <Badge variant={visit.paymentStatus === 'Paid' ? 'success' : 'warning'} className="px-2.5 py-0.5 font-bold text-[9px] shadow-sm uppercase tracking-wider">
+                                        {visit.paymentStatus}
+                                    </Badge>
                                 </div>
-                                <ArrowRight size={16} className="text-slate-200 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" />
+                                <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-blue-600 group-hover:scale-110 transition-all duration-300">
+                                    <ArrowRight size={14} className="text-slate-400 group-hover:text-white transition-colors" />
+                                </div>
                             </div>
                         </Card>
                     ))}

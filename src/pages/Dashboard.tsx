@@ -74,28 +74,30 @@ export const Dashboard = () => {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: idx * 0.05, type: 'spring', stiffness: 200, damping: 20 }}
           >
-            <Card className="relative overflow-hidden p-5 group flex flex-col justify-between h-36 border-slate-200/60 shadow-xs hover:border-blue-400">
+            <Card className="relative overflow-hidden p-5 group flex flex-col justify-between h-40 bg-white border-transparent shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_30px_-4px_rgba(59,130,246,0.15)] hover:-translate-y-1 transition-all duration-300 rounded-[1.75rem]">
                <div className="flex justify-between items-start">
                   <div className={cn(
-                    "p-2.5 rounded-xl transition-all duration-500 group-hover:scale-110",
-                    stat.variant === 'info' ? "bg-blue-50 text-blue-600" :
-                    stat.variant === 'success' ? "bg-emerald-50 text-emerald-600" :
-                    stat.variant === 'warning' ? "bg-amber-50 text-amber-600" :
-                    "bg-slate-50 text-slate-600"
+                    "p-3 rounded-2xl transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 shadow-sm",
+                    stat.variant === 'info' ? "bg-gradient-to-br from-blue-50 to-blue-100/50 text-blue-600 border border-blue-100/50" :
+                    stat.variant === 'success' ? "bg-gradient-to-br from-emerald-50 to-emerald-100/50 text-emerald-600 border border-emerald-100/50" :
+                    stat.variant === 'warning' ? "bg-gradient-to-br from-amber-50 to-amber-100/50 text-amber-600 border border-amber-100/50" :
+                    "bg-gradient-to-br from-slate-50 to-slate-100/50 text-slate-600 border border-slate-100/50"
                   )}>
-                    <stat.icon size={18} />
+                    <stat.icon size={20} strokeWidth={2.5} />
                   </div>
                </div>
-               <div className="space-y-1">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">{stat.label}</p>
-                  <p className="text-2xl font-display font-extrabold text-slate-950 tracking-tight leading-none">
+               <div className="space-y-1.5 relative z-10">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em] leading-none mb-2">{stat.label}</p>
+                  <p className="text-3xl font-display font-extrabold text-slate-900 tracking-tighter leading-none group-hover:text-blue-700 transition-colors">
                     {stat.value}
                   </p>
                </div>
                {/* Subtle background decoration */}
-               <div className="absolute -right-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity">
-                  <stat.icon size={80} />
+               <div className="absolute -right-6 -top-6 opacity-[0.02] group-hover:opacity-[0.06] transition-all duration-500 group-hover:scale-110 group-hover:rotate-12">
+                  <stat.icon size={120} />
                </div>
+               {/* Gradient overlay */}
+               <div className="absolute inset-0 bg-gradient-to-br from-white/0 to-slate-50/50 transition-opacity duration-500 group-hover:opacity-0" />
             </Card>
           </motion.div>
         ))}
@@ -103,12 +105,17 @@ export const Dashboard = () => {
 
       {/* Today's Schedule */}
       <section className="space-y-4 px-1">
-        <div className="flex items-center justify-between px-1">
-            <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-                <h2 className="text-xs font-bold text-slate-900 uppercase tracking-[0.15em] font-display">Active Protocols</h2>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between px-1 gap-4">
+            <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-[1rem] bg-blue-50 text-blue-600 border border-blue-100 shadow-sm relative">
+                    <div className="absolute top-0 right-0 w-2.5 h-2.5 bg-blue-500 rounded-full border-2 border-white animate-pulse" />
+                    <Clock size={20} strokeWidth={2.5} />
+                </div>
+                <div className="space-y-0.5">
+                    <h2 className="text-lg font-black text-slate-900 tracking-tight leading-none text-left">Active Protocols</h2>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none text-left mt-1">Today's Operating Schedule</p>
+                </div>
             </div>
-            <button onClick={() => navigate('/calendar')} className="text-[10px] font-black text-blue-600 uppercase tracking-widest hover:underline underline-offset-4">View All</button>
         </div>
 
         {todayVisits.length === 0 ? (
@@ -133,26 +140,40 @@ export const Dashboard = () => {
                >
                 <Link to={`/patients/${visit.patientId}/cases/${visit.caseId}`}>
                     <Card 
-                        className="flex items-center justify-between p-4 hover:border-blue-400 active:scale-[0.99] transition-all cursor-pointer bg-white group border-slate-200/60"
+                        className="flex flex-col sm:flex-row sm:items-center justify-between p-5 hover:border-blue-500 hover:shadow-xl hover:shadow-blue-900/5 active:scale-[0.98] transition-all duration-300 cursor-pointer group bg-white border-slate-200 rounded-[1.75rem] relative overflow-hidden"
                     >
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-slate-50 text-slate-900 border border-slate-100 rounded-2xl flex items-center justify-center font-black group-hover:bg-blue-600 group-hover:text-white transition-all medical-shadow">
+                        {/* Decorative hover bg */}
+                        <div className="absolute -right-10 -top-10 w-32 h-32 bg-blue-50 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                        
+                        <div className="flex items-center gap-4 relative z-10">
+                            <div className="w-14 h-14 bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200/60 rounded-[1.2rem] flex items-center justify-center text-slate-700 font-extrabold text-xl group-hover:bg-gradient-to-br group-hover:from-blue-600 group-hover:to-indigo-600 group-hover:text-white group-hover:border-blue-500 transition-all duration-300 shadow-sm shrink-0">
                                 {visit.patientName?.[0] || 'P'}
                             </div>
-                            <div className="space-y-0.5">
-                                <h4 className="font-extrabold text-sm text-slate-900 group-hover:text-blue-600 transition-colors">{visit.patientName || 'Patient'}</h4>
-                                <div className="flex items-center gap-2">
-                                    <Badge variant="neutral" className="text-[8px] bg-slate-100 group-hover:bg-blue-50 group-hover:text-blue-700">Session ID: {visit.id.substring(0, 4)}</Badge>
-                                    <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">{formatDate(visit.date)}</p>
+                            <div className="space-y-1">
+                                <h4 className="font-extrabold text-slate-900 group-hover:text-blue-700 transition-colors leading-tight tracking-tight text-base">{visit.patientName || 'Patient'}</h4>
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <div className="flex items-center gap-1.5 text-slate-500 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100 group-hover:bg-blue-50 group-hover:border-blue-100 group-hover:text-blue-600 transition-colors">
+                                        <Clock size={10} strokeWidth={3} />
+                                        <p className="text-[9px] font-black uppercase tracking-widest leading-none mt-0.5">{formatDate(visit.date)}</p>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 text-slate-400">
+                                        <div className="w-1 h-1 rounded-full bg-slate-300" />
+                                        <p className="text-[9px] font-bold uppercase tracking-wider mt-0.5">ID: {visit.id.substring(0, 4)}</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                            <div className="text-right flex flex-col items-end">
-                                <p className="text-sm font-mono font-black text-slate-950">{formatCurrency(visit.amountPaid)}</p>
-                                <Badge variant={visit.paymentStatus === 'Paid' ? 'success' : 'warning'}>{visit.paymentStatus}</Badge>
+                        
+                        <div className="flex items-center justify-between sm:justify-end gap-6 mt-3 sm:mt-0 relative z-10 pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                            <div className="flex flex-col sm:items-end">
+                                <p className="text-[10px] font-mono font-black text-slate-900 tracking-tight leading-none mb-1.5">{formatCurrency(visit.amountPaid)}</p>
+                                <Badge variant={visit.paymentStatus === 'Paid' ? 'success' : 'warning'} className="px-2.5 py-0.5 font-bold text-[9px] shadow-sm uppercase tracking-wider">
+                                    {visit.paymentStatus}
+                                </Badge>
                             </div>
-                            <ArrowRight size={16} className="text-slate-200 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" />
+                            <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-blue-600 group-hover:scale-110 transition-all duration-300">
+                                <ArrowRight size={14} className="text-slate-400 group-hover:text-white transition-colors" />
+                            </div>
                         </div>
                     </Card>
                 </Link>
@@ -165,35 +186,36 @@ export const Dashboard = () => {
       {/* Quick Access Rails */}
       <section className="space-y-4 px-1">
         <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest ml-1">Terminal Actions</h2>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-4">
           <button 
             onClick={() => navigate('/patients/add')}
-            className="flex items-center gap-3 p-4 bg-slate-900 text-white rounded-[1.5rem] active:scale-95 transition-all shadow-lg shadow-slate-200 group overflow-hidden relative"
+            className="flex flex-col items-start gap-4 p-5 bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-[1.75rem] active:scale-[0.98] transition-all duration-300 shadow-xl shadow-slate-900/10 group overflow-hidden relative hover:shadow-blue-900/20 hover:-translate-y-1"
           >
-            <div className="p-2 bg-white/10 rounded-xl relative z-10">
-                <PlusCircle size={20} className="text-blue-400" />
+            <div className="p-3 bg-white/10 rounded-2xl relative z-10 border border-white/5 backdrop-blur-sm group-hover:scale-110 transition-transform duration-500">
+                <PlusCircle size={24} className="text-blue-300" />
             </div>
-            <div className="text-left relative z-10">
-                <p className="text-[10px] font-black text-white/50 uppercase tracking-widest leading-none">Intelligence</p>
-                <p className="text-xs font-bold mt-1">New Patient</p>
+            <div className="text-left relative z-10 space-y-1">
+                <p className="text-[9px] font-black text-blue-200 uppercase tracking-[0.2em] leading-none opacity-80">Intelligence</p>
+                <p className="text-sm font-extrabold tracking-tight">New Patient</p>
             </div>
-            <div className="absolute right-[-10%] bottom-[-10%] opacity-10 group-hover:scale-125 transition-transform">
-                <Users size={80} />
+            <div className="absolute -right-8 -bottom-8 opacity-[0.05] group-hover:opacity-10 group-hover:scale-125 transition-all duration-500 group-hover:-rotate-12">
+                <Users size={120} />
             </div>
+            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/20 rounded-full blur-3xl group-hover:bg-blue-400/30 transition-colors duration-500" />
           </button>
           <button 
             onClick={() => navigate('/patients')}
-            className="flex items-center gap-3 p-4 bg-white border border-slate-200 rounded-[1.5rem] active:scale-95 transition-all medical-shadow group overflow-hidden relative"
+            className="flex flex-col items-start gap-4 p-5 bg-white rounded-[1.75rem] active:scale-[0.98] transition-all duration-300 shadow-sm border border-slate-100 group overflow-hidden relative hover:shadow-[0_8px_30px_-4px_rgba(59,130,246,0.1)] hover:-translate-y-1 hover:border-blue-100"
           >
-            <div className="p-2 bg-blue-50 rounded-xl relative z-10">
-                <Search size={20} className="text-blue-600" />
+            <div className="p-3 bg-blue-50 rounded-2xl relative z-10 border border-blue-100/50 group-hover:bg-blue-600 group-hover:scale-110 transition-colors duration-500 group-hover:transition-transform">
+                <Search size={24} className="text-blue-600 group-hover:text-white transition-colors" />
             </div>
-            <div className="text-left relative z-10">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Database</p>
-                <p className="text-xs font-bold text-slate-900 mt-1">Patient Index</p>
+            <div className="text-left relative z-10 space-y-1">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none group-hover:text-blue-500 transition-colors">Database</p>
+                <p className="text-sm font-extrabold text-slate-900 tracking-tight">Patient Index</p>
             </div>
-            <div className="absolute right-[-10%] bottom-[-10%] opacity-[0.03] group-hover:scale-125 transition-transform">
-                <Search size={80} />
+            <div className="absolute -right-8 -bottom-8 opacity-[0.02] group-hover:opacity-[0.05] group-hover:scale-125 transition-all duration-500 group-hover:rotate-12">
+                <Search size={120} />
             </div>
           </button>
         </div>

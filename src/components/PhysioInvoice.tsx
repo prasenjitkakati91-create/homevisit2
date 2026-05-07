@@ -1,14 +1,14 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     X, Printer, Download, Share2, MessageCircle, Send, 
     TrendingUp, User, Calendar, MapPin, Phone, 
-    CreditCard, Activity, CheckCircle2, Clock, AlertTriangle 
+    CreditCard, Activity, CheckCircle2, Clock, AlertTriangle, Loader2
 } from 'lucide-react';
 import { formatCurrency, formatDate } from '../utils/helpers';
 import { useAuth } from '../context/AuthContext';
 import { Button, Badge } from './ui/Generic';
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 
 interface PhysioInvoiceProps {
@@ -25,66 +25,107 @@ interface PhysioInvoiceProps {
 export const PhysioInvoice: React.FC<PhysioInvoiceProps> = ({ isOpen, onClose, patient, dues }) => {
     const { user } = useAuth();
     const invoiceRef = useRef<HTMLDivElement>(null);
+    const [isPdfLoading, setIsPdfLoading] = useState(false);
+    const [isWaLoading, setIsWaLoading] = useState(false);
+    const [toastMessage, setToastMessage] = useState<{message: string, type: 'success'|'error'|'info'} | null>(null);
     
     if (!isOpen || !patient || !dues) return null;
 
     const invoiceNumber = `INV-${Date.now().toString().slice(-6)}`;
     const invoiceDate = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 
-    const downloadPDF = async (share = false) => {
+    const showToast = (message: string, type: 'success'|'error'|'info' = 'info') => {
+        setToastMessage({ message, type });
+        setTimeout(() => setToastMessage(null), 3000);
+    };
+
+    const downloadPDF = async () => {
         if (!invoiceRef.current) return;
+        
+        setIsPdfLoading(true);
+        showToast("Generating PDF...", "info");
         
         try {
             const element = invoiceRef.current;
+
+            // 1. Extract all CSS rules to avoid external links and sanitize modern color functions
+            let allCss = '';
+            for (let i = 0; i < document.styleSheets.length; i++) {
+                try {
+                    const sheet = document.styleSheets[i];
+                    const rules = sheet.cssRules || sheet.rules;
+                    for (let j = 0; j < rules.length; j++) {
+                        allCss += rules[j].cssText + '\n';
+                    }
+                } catch (e) {
+                    console.warn('CORS error accessing stylesheet', e);
+                }
+            }
+
+            // 2. Sanitize CSS to replace oklch, oklab, color(display-p3...) with fallback #2563eb
+            const sanitizeCSS = (css: string) => {
+                let result = css;
+                const keywords = ['oklch(', 'oklab(', 'color(display-p3'];
+                
+                for (const keyword of keywords) {
+                    let i = 0;
+                    while (result.indexOf(keyword, i) !== -1) {
+                        const start = result.indexOf(keyword, i);
+                        let openCount = 0;
+                        let end = start;
+                        for (let j = start; j < result.length; j++) {
+                            if (result[j] === '(') openCount++;
+                            if (result[j] === ')') {
+                                openCount--;
+                                if (openCount === 0) {
+                                    end = j;
+                                    break;
+                                }
+                            }
+                        }
+                        // If it failed to find a matching closing parenthesis, just abort this keyword
+                        if (openCount !== 0) break; 
+                        
+                        result = result.substring(0, start) + '#2563eb' + result.substring(end + 1);
+                        i = start + 7;
+                    }
+                }
+                return result;
+            };
+
+            const safeCss = sanitizeCSS(allCss);
+
             const canvas = await html2canvas(element, {
                 scale: 2,
                 useCORS: true,
                 logging: false,
                 backgroundColor: '#ffffff',
                 onclone: (clonedDoc) => {
-                    // Create a global override style for the clone to simplify rendering
-                    const style = clonedDoc.createElement('style');
-                    style.innerHTML = `
+                    // Remove all original stylesheets
+                    const links = Array.from(clonedDoc.getElementsByTagName('link'));
+                    links.forEach(l => l.parentNode?.removeChild(l));
+                    const styles = Array.from(clonedDoc.getElementsByTagName('style'));
+                    styles.forEach(s => s.parentNode?.removeChild(s));
+
+                    // Inject our sanitized stylesheet
+                    const styleBlock = clonedDoc.createElement('style');
+                    styleBlock.innerHTML = safeCss + `
                         * { 
                             box-shadow: none !important; 
                             text-shadow: none !important; 
                             transition: none !important;
                             animation: none !important;
                         }
-                        /* Force visible colors if they are hidden/transparent due to complex variables */
                         .invoice-container { background-color: white !important; }
                     `;
-                    clonedDoc.head.appendChild(style);
+                    clonedDoc.head.appendChild(styleBlock);
 
-                    // Sanitize style tags for unsupported color functions
-                    const styleTags = Array.from(clonedDoc.getElementsByTagName('style'));
-                    styleTags.forEach(tag => {
-                        try {
-                            if (tag.innerHTML.includes('oklch') || tag.innerHTML.includes('oklab')) {
-                                // Robust regex to replace oklch/oklab with a standard color
-                                tag.innerHTML = tag.innerHTML.replace(/(oklch|oklab)\([^)]*\)/g, '#2563eb');
-                            }
-                            // Also clear out any @media or @container queries that might cause EOF parsing errors
-                            if (tag.innerHTML.includes('@container')) {
-                                tag.innerHTML = tag.innerHTML.replace(/@container[^{]+\{[^}]+\}/g, '');
-                            }
-                        } catch (e) {
-                            console.warn('Style sanitization failed', e);
-                        }
-                    });
-
-                    // Walk all elements to strip inline oklch/oklab and reset problematic styles
+                    // Also sanitize inline styles
                     const all = clonedDoc.getElementsByTagName('*');
                     for (let i = 0; i < all.length; i++) {
                         const el = all[i] as HTMLElement;
-                        if (el.style) {
-                            if (el.style.cssText.includes('oklch') || el.style.cssText.includes('oklab')) {
-                                el.style.cssText = el.style.cssText.replace(/(oklch|oklab)\([^)]*\)/g, '#2563eb');
-                            }
-                            // Force block layout or clear floats if necessary for simple canvas capturing
-                            if (window.getComputedStyle(el).display === 'flex') {
-                                // Keep flex but ensure it's not breaking
-                            }
+                        if (el.style && el.style.cssText) {
+                            el.style.cssText = sanitizeCSS(el.style.cssText);
                         }
                     }
                 }
@@ -102,23 +143,13 @@ export const PhysioInvoice: React.FC<PhysioInvoiceProps> = ({ isOpen, onClose, p
             
             pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
             
-            if (share && (navigator as any).canShare) {
-                const blob = pdf.output('blob');
-                const file = new File([blob], `Invoice_${invoiceNumber}.pdf`, { type: 'application/pdf' });
-                if ((navigator as any).canShare({ files: [file] })) {
-                    await (navigator as any).share({
-                        files: [file],
-                        title: `Invoice ${invoiceNumber}`,
-                        text: `Physiotherapy invoice for ${patient.name}`
-                    });
-                    return;
-                }
-            }
-            
-            pdf.save(`PhysioTrack_Invoice_${patient.name.replace(/\s+/g, '_')}.pdf`);
+            pdf.save(`Invoice-${invoiceNumber}.pdf`);
+            showToast("PDF downloaded successfully", "success");
         } catch (error) {
             console.error('PDF generation failed:', error);
-            alert('PDF generation failed. Please try again or take a screenshot.');
+            showToast("Failed to generate PDF", "error");
+        } finally {
+            setIsPdfLoading(false);
         }
     };
 
@@ -129,18 +160,29 @@ export const PhysioInvoice: React.FC<PhysioInvoiceProps> = ({ isOpen, onClose, p
     };
 
     const shareWhatsApp = () => {
-        const message = `Hello *${patient.name}*,\nYour physiotherapy home visit code *${invoiceNumber}* for *${formatCurrency(dues.total)}* is attached.\n\nThank you.\n- ${user?.name || 'PhysioTrack'}`;
-        const encoded = encodeURIComponent(message);
-        window.open(`https://wa.me/${patient.phone.replace(/\D/g, '')}?text=${encoded}`, '_blank');
-    };
-
-    const handleWhatsAppAction = async () => {
+        setIsWaLoading(true);
+        showToast("Opening WhatsApp...", "info");
+        
         try {
-            await downloadPDF(true);
-            shareWhatsApp();
-        } catch (error) {
-            console.error("WhatsApp action failed", error);
-            shareWhatsApp();
+            const phoneNumber = patient.phone ? patient.phone.replace(/\D/g, '') : '';
+            if (!phoneNumber) {
+                showToast("Patient phone number is missing", "error");
+                setIsWaLoading(false);
+                return;
+            }
+            
+            const formattedPhone = phoneNumber.length === 10 ? `91${phoneNumber}` : phoneNumber;
+            
+            const message = `Hello ${patient.name},\n\nYour physiotherapy home visit invoice is ready.\n\nInvoice No: ${invoiceNumber}\nAmount: ${formatCurrency(dues.total)}\n\nThank you,\n${user?.name || 'Dr. Trishnamoni Haloi (PT)'}`;
+            const encodedMessage = encodeURIComponent(message);
+            
+            window.open(`https://wa.me/${formattedPhone}?text=${encodedMessage}`, '_blank');
+            showToast("WhatsApp opened successfully", "success");
+        } catch (err) {
+            console.error("WhatsApp error", err);
+            showToast("Failed to open WhatsApp", "error");
+        } finally {
+            setIsWaLoading(false);
         }
     };
 
@@ -373,20 +415,22 @@ export const PhysioInvoice: React.FC<PhysioInvoiceProps> = ({ isOpen, onClose, p
                         {/* Action Buttons Container (Hidden on Print) */}
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 print:hidden px-4 sm:px-0">
                             <Button 
-                                className="h-16 rounded-[1.5rem] bg-green-600 hover:bg-green-700 text-white border-none shadow-lg shadow-green-100 space-x-3 transition-all active:scale-95 flex items-center justify-center"
-                                onClick={handleWhatsAppAction}
+                                className="h-16 rounded-[1.5rem] bg-green-600 hover:bg-green-700 text-white border-none shadow-lg shadow-green-100 space-x-3 transition-all active:scale-95 flex items-center justify-center disabled:opacity-80 disabled:cursor-not-allowed"
+                                onClick={shareWhatsApp}
+                                disabled={isWaLoading}
                             >
-                                <MessageCircle size={20} />
+                                {isWaLoading ? <Loader2 size={20} className="animate-spin" /> : <MessageCircle size={20} />}
                                 <div className="text-left">
                                     <p className="text-[10px] font-black uppercase tracking-widest leading-none opacity-60">Send via</p>
                                     <p className="text-sm font-bold">WhatsApp</p>
                                 </div>
                             </Button>
                             <Button 
-                                className="h-16 rounded-[1.5rem] bg-blue-600 hover:bg-blue-700 text-white border-none shadow-lg shadow-blue-100 space-x-3 transition-all active:scale-95 flex items-center justify-center"
+                                className="h-16 rounded-[1.5rem] bg-blue-600 hover:bg-blue-700 text-white border-none shadow-lg shadow-blue-100 space-x-3 transition-all active:scale-95 flex items-center justify-center disabled:opacity-80 disabled:cursor-not-allowed"
                                 onClick={downloadPDF}
+                                disabled={isPdfLoading}
                             >
-                                <Download size={20} />
+                                {isPdfLoading ? <Loader2 size={20} className="animate-spin" /> : <Download size={20} />}
                                 <div className="text-left">
                                     <p className="text-[10px] font-black uppercase tracking-widest leading-none opacity-60">Export to</p>
                                     <p className="text-sm font-bold">PDF Invoice</p>
@@ -417,6 +461,27 @@ export const PhysioInvoice: React.FC<PhysioInvoiceProps> = ({ isOpen, onClose, p
                         .fixed { position: static !important; background: white !important; padding: 0 !important; }
                     }
                 `}} />
+
+                {/* Toast Notification */}
+                <AnimatePresence>
+                    {toastMessage && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 50, scale: 0.9 }}
+                            className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] px-6 py-3 rounded-2xl shadow-xl flex items-center gap-3 font-bold text-sm ${
+                                toastMessage.type === 'success' ? 'bg-green-600 text-white shadow-green-900/20' :
+                                toastMessage.type === 'error' ? 'bg-red-600 text-white shadow-red-900/20' :
+                                'bg-slate-800 text-white shadow-slate-900/20'
+                            }`}
+                        >
+                            {toastMessage.type === 'success' && <CheckCircle2 size={18} />}
+                            {toastMessage.type === 'error' && <AlertTriangle size={18} />}
+                            {toastMessage.type === 'info' && <Loader2 size={18} className="animate-spin" />}
+                            {toastMessage.message}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
         </AnimatePresence>
     );

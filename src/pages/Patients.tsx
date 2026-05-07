@@ -337,28 +337,40 @@ export const PatientList = () => {
             >
                 <Link to={`/patients/${patient.id}`}>
                     <Card 
-                    className="flex items-center justify-between p-4 hover:border-blue-400 active:scale-[0.99] transition-all cursor-pointer group bg-white border-slate-200/60"
+                    className="flex flex-col sm:flex-row sm:items-center justify-between p-5 hover:border-blue-500 hover:shadow-xl hover:shadow-blue-900/5 active:scale-[0.98] transition-all duration-300 cursor-pointer group bg-white border-slate-200 rounded-[2rem] relative overflow-hidden"
                     >
-                        <div className="flex items-center gap-4">
-                            <div className="w-14 h-14 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-center text-slate-900 font-black text-xl group-hover:bg-blue-600 group-hover:text-white transition-all medical-shadow">
-                            {patient.name?.[0] || 'P'}
+                        {/* Decorative background element */}
+                        <div className="absolute -right-10 -top-10 w-32 h-32 bg-blue-50 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                        
+                        <div className="flex items-center gap-5 relative z-10">
+                            <div className="w-16 h-16 bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200/60 rounded-[1.25rem] flex items-center justify-center text-slate-700 font-extrabold text-2xl group-hover:bg-gradient-to-br group-hover:from-blue-600 group-hover:to-indigo-600 group-hover:text-white group-hover:border-blue-500 transition-all duration-300 shadow-sm shrink-0">
+                                {patient.name?.[0] || 'P'}
                             </div>
-                            <div className="space-y-0.5">
-                                <h3 className="font-extrabold text-slate-900 group-hover:text-blue-600 transition-colors leading-tight">{patient.name || 'Unknown'}</h3>
-                                <div className="flex items-center gap-2">
-                                    <Badge variant="neutral" className="text-[8px] bg-slate-100 group-hover:bg-blue-50 group-hover:text-blue-700">Contact</Badge>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{patient.phone || 'N/A'}</p>
+                            <div className="space-y-1">
+                                <h3 className="font-black text-lg text-slate-900 group-hover:text-blue-700 transition-colors leading-tight tracking-tight">{patient.name || 'Unknown'}</h3>
+                                <div className="flex flex-wrap items-center gap-2.5">
+                                    <div className="flex items-center gap-1.5 text-slate-500 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-100 group-hover:bg-blue-50 group-hover:border-blue-100 group-hover:text-blue-600 transition-colors">
+                                        <Phone size={10} strokeWidth={3} />
+                                        <p className="text-[10px] font-black uppercase tracking-widest leading-none mt-0.5">{patient.phone || 'N/A'}</p>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 text-slate-400">
+                                        <div className="w-1 h-1 rounded-full bg-slate-300" />
+                                        <p className="text-[10px] font-bold uppercase tracking-wider mt-0.5">{patient.age ? `${patient.age}Y` : 'N/A'} • {patient.gender?.[0] || 'U'}</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        <div className="flex items-center gap-4">
-                            <div className="text-right flex flex-col items-end">
-                                <p className="text-[10px] uppercase font-black text-slate-300 tracking-widest leading-none mb-1">Status</p>
-                                <Badge variant={patient?.status === 'Completed' ? 'success' : patient?.status === 'Inactive' ? 'neutral' : 'info'}>
+                        
+                        <div className="flex items-center justify-between sm:justify-end gap-6 mt-4 sm:mt-0 relative z-10 pt-4 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                            <div className="flex flex-col sm:items-end">
+                                <p className="text-[9px] uppercase font-black text-slate-400 tracking-[0.2em] leading-none mb-1.5">Current Status</p>
+                                <Badge variant={patient?.status === 'Completed' ? 'success' : patient?.status === 'Inactive' ? 'neutral' : 'info'} className="px-3 py-1 font-bold text-[10px] shadow-sm">
                                     {patient?.status || 'Active'}
                                 </Badge>
                             </div>
-                            <ArrowRight size={18} className="text-slate-200 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" />
+                            <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-blue-600 group-hover:scale-110 transition-all duration-300">
+                                <ArrowRight size={16} className="text-slate-400 group-hover:text-white transition-colors" />
+                            </div>
                         </div>
                     </Card>
                 </Link>

@@ -18,7 +18,9 @@ import {
   MoreVertical,
   Download,
   Image as ImageIcon,
-  ExternalLink
+  ExternalLink,
+  User,
+  Activity
 } from 'lucide-react';
 import { Badge, Card, Button, Input, Textarea, Select } from '../components/ui/Generic';
 import { patientService, caseService, sessionService } from '../services/db';
@@ -224,12 +226,15 @@ export const PatientDetail = () => {
     <div className="space-y-10 pb-24 animate-in fade-in slide-in-from-bottom-4 duration-500 px-1">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <button onClick={() => navigate('/patients')} className="p-2.5 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-slate-900 transition-all medical-shadow active:scale-90">
-            <ArrowLeft size={20} />
+          <button onClick={() => navigate('/patients')} className="p-3 bg-white border border-slate-200 rounded-[1rem] text-slate-500 hover:text-slate-900 hover:border-slate-300 hover:shadow-lg hover:shadow-slate-200/50 transition-all active:scale-95 group">
+            <ArrowLeft size={18} strokeWidth={2.5} className="group-hover:-translate-x-0.5 transition-transform" />
           </button>
-          <div className="space-y-0.5">
-            <p className="text-[10px] font-extrabold text-blue-600 uppercase tracking-[0.2em]">Profile Index</p>
-            <h1 className="text-xl font-extrabold text-slate-950 tracking-tight font-display">Clinical Context</h1>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-pulse shadow-[0_0_8px_rgba(37,99,235,0.8)]" />
+                <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] leading-none mt-0.5">Profile Index</p>
+            </div>
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight leading-none">Clinical Context</h1>
           </div>
         </div>
         <div className="flex gap-2">
@@ -237,15 +242,15 @@ export const PatientDetail = () => {
                 <>
                     <button 
                         onClick={() => navigate(`/patients/${patientId}/edit`)} 
-                        className="p-3 bg-white border border-slate-200 text-slate-400 hover:text-blue-600 rounded-xl transition-all medical-shadow active:scale-95"
+                        className="p-3 bg-white border border-slate-200 text-slate-500 hover:text-blue-600 hover:bg-blue-50/50 hover:border-blue-200 rounded-[1rem] transition-all active:scale-95 hover:shadow-lg hover:shadow-blue-500/10"
                     >
-                        <Edit2 size={18} />
+                        <Edit2 size={16} strokeWidth={2.5} />
                     </button>
                     <button 
                         onClick={handleDeletePatient} 
-                        className="p-3 bg-white border border-slate-200 text-slate-400 hover:text-red-500 rounded-xl transition-all medical-shadow active:scale-95"
+                        className="p-3 bg-white border border-slate-200 text-slate-500 hover:text-red-600 hover:bg-red-50/50 hover:border-red-200 rounded-[1rem] transition-all active:scale-95 hover:shadow-lg hover:shadow-red-500/10"
                     >
-                        <Trash2 size={18} />
+                        <Trash2 size={16} strokeWidth={2.5} />
                     </button>
                 </>
             )}
@@ -264,43 +269,52 @@ export const PatientDetail = () => {
       )}
 
       {/* Patient Profile Card */}
-      <Card className="bg-slate-950 border-white/10 text-white p-8 rounded-[2.5rem] relative overflow-hidden shadow-2xl shadow-slate-900/20">
-         <div className="flex items-start justify-between mb-8 relative z-10">
-          <div className="space-y-1">
-            <h2 className="text-4xl font-black tracking-tight leading-none">{patient.name}</h2>
-            <div className="flex items-center gap-2">
-                <Badge variant="info" className="bg-blue-500 text-white border-none py-0.5">{patient.gender}</Badge>
-                <Badge variant="neutral" className="bg-white/10 text-white/60 border-white/5 py-0.5">{patient.age} Yrs</Badge>
-                <Badge variant={isCompleted ? 'success' : patient?.status === 'Inactive' ? 'neutral' : 'info'} className="bg-white/10 text-white/60 border-white/5 py-0.5">
-                    {patient?.status || 'Active'}
-                </Badge>
+      <Card className="bg-slate-900 border-white/10 p-7 sm:p-10 rounded-[2rem] sm:rounded-[2.5rem] relative overflow-hidden shadow-2xl shadow-blue-900/10 group">
+         <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 z-0" />
+         
+         {/* Abstract background intelligence */}
+         <div className="absolute -top-32 -right-32 w-96 h-96 bg-blue-500/20 rounded-full blur-[100px] z-0 group-hover:bg-blue-500/30 transition-colors duration-700" />
+         <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-indigo-500/10 rounded-full blur-[80px] z-0" />
+         
+         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6 mb-10 relative z-10">
+          <div className="space-y-4">
+            <h2 className="text-4xl sm:text-5xl font-black text-white tracking-tight leading-none drop-shadow-md">{patient.name}</h2>
+            <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/20 border border-blue-400/30 text-blue-200 rounded-xl backdrop-blur-md shadow-sm">
+                    <User size={12} strokeWidth={3} />
+                    <span className="text-[10px] font-black uppercase tracking-[0.15em] leading-none mt-0.5">{patient.gender}</span>
+                </div>
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 border border-white/10 text-white/80 rounded-xl backdrop-blur-md shadow-sm">
+                    <span className="text-[10px] font-black uppercase tracking-[0.15em] leading-none mt-0.5">{patient.age} YRS</span>
+                </div>
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 border border-white/10 text-white/80 rounded-xl backdrop-blur-md shadow-sm">
+                    <div className={cn("w-1.5 h-1.5 rounded-full", isCompleted ? "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" : patient?.status === 'Inactive' ? "bg-slate-400" : "bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.8)] animate-pulse")} />
+                    <span className="text-[10px] font-black uppercase tracking-[0.15em] leading-none mt-0.5">{patient?.status || 'Active'}</span>
+                </div>
             </div>
-          </div>
-          <div className="w-16 h-16 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl flex items-center justify-center text-3xl font-black text-blue-400 medical-shadow">
-            {patient.name?.[0] || 'P'}
           </div>
         </div>
         
-        <div className="grid grid-cols-1 gap-4 relative z-10">
-          <a href={`tel:${patient.phone}`} className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/5 hover:bg-white/10 transition-colors group">
-            <div className="p-2.5 bg-blue-500/20 text-blue-400 rounded-xl group-hover:scale-110 transition-transform"><Phone size={18} /></div>
-            <div className="space-y-0.5">
-                <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.1em]">Tele-Connectivity</p>
-                <p className="text-sm font-mono font-medium text-white/90">{patient.phone}</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
+          <a href={`tel:${patient.phone}`} className="flex items-center gap-4 p-4 sm:p-5 bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 rounded-[1.25rem] transition-all duration-300 group/item">
+            <div className="p-3 bg-blue-500/20 text-blue-300 rounded-[1rem] group-hover/item:scale-110 group-hover/item:bg-blue-500/30 transition-all duration-300 shadow-sm">
+                <Phone size={18} strokeWidth={2.5} />
+            </div>
+            <div className="space-y-1.5">
+                <p className="text-[9px] font-black text-white/40 uppercase tracking-[0.2em] leading-none">Tele-Connectivity</p>
+                <p className="text-sm font-mono font-bold text-white/90">{patient.phone}</p>
             </div>
           </a>
-          <div className="flex items-start gap-4 p-4 bg-white/5 rounded-2xl border border-white/5">
-            <div className="p-2.5 bg-blue-500/20 text-blue-400 rounded-xl"><MapPin size={18} /></div>
-            <div className="space-y-0.5">
-                <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.1em]">Geographic Deployment</p>
-                <p className="text-sm font-medium text-white/90 leading-relaxed">{patient.address}</p>
+          <div className="flex items-start gap-4 p-4 sm:p-5 bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 rounded-[1.25rem] transition-all duration-300 group/item">
+            <div className="p-3 bg-indigo-500/20 text-indigo-300 rounded-[1rem] group-hover/item:scale-110 group-hover/item:bg-indigo-500/30 transition-all duration-300 shadow-sm shrink-0">
+                <MapPin size={18} strokeWidth={2.5} />
+            </div>
+            <div className="space-y-1.5">
+                <p className="text-[9px] font-black text-white/40 uppercase tracking-[0.2em] leading-none">Geographic Deployment</p>
+                <p className="text-xs font-semibold text-white/80 leading-tight line-clamp-2">{patient.address}</p>
             </div>
           </div>
         </div>
-
-        {/* Abstract shapes for background */}
-        <div className="absolute top-[-20%] right-[-10%] w-64 h-64 bg-blue-600 blur-[100px] opacity-20" />
-        <div className="absolute bottom-[-20%] left-[-10%] w-48 h-48 bg-indigo-500 blur-[80px] opacity-10" />
       </Card>
 
       <div className="space-y-4">
@@ -369,12 +383,17 @@ export const PatientDetail = () => {
 
       {/* Treatment Cases */}
       <div className="space-y-6">
-        <div className="flex items-center justify-between px-1">
-            <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-emerald-500 rounded-full" />
-                <h2 className="text-xs font-bold text-slate-950 uppercase tracking-[0.15em] font-display">Treatment Cycles</h2>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between px-1 gap-4">
+            <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-[1rem] bg-emerald-50 text-emerald-600 border border-emerald-100 shadow-sm">
+                    <Activity size={20} strokeWidth={2.5} />
+                </div>
+                <div className="space-y-1">
+                    <h2 className="text-lg font-black text-slate-900 tracking-tight leading-none">Treatment Cycles</h2>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">{cases.length} Total Protocol{cases.length !== 1 ? 's' : ''}</p>
+                </div>
             </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
             {!isCompleted && (
                 <>
                     {cases.some(c => c.status === 'Active') ? (
@@ -383,23 +402,23 @@ export const PatientDetail = () => {
                             const activeCase = cases.find(c => c.status === 'Active');
                             if (activeCase) navigate(`/patients/${patientId}/cases/${activeCase.id}/sessions/add`);
                         }}
-                        className="text-xs font-black text-white bg-slate-950 px-6 py-3.5 rounded-2xl flex items-center gap-2 hover:bg-blue-600 transition-all active:scale-95 uppercase tracking-widest medical-shadow"
+                        className="text-[10px] font-black text-white bg-slate-900 px-4 py-2.5 rounded-[1rem] flex items-center gap-2 hover:bg-slate-800 transition-all active:scale-95 uppercase tracking-widest shadow-lg shadow-slate-900/10 hover:shadow-slate-900/20"
                         >
-                            <Calendar size={16} /> Schedule Session
+                            <Calendar size={14} strokeWidth={2.5} /> Schedule Session
                         </button>
                     ) : (
                         <button 
                         onClick={() => toast.info('Please create an active treatment case first to schedule sessions')}
-                        className="text-xs font-black text-slate-400 bg-slate-200 px-6 py-3.5 rounded-2xl flex items-center gap-2 cursor-not-allowed uppercase tracking-widest opacity-60"
+                        className="text-[10px] font-black text-slate-400 bg-slate-100 px-4 py-2.5 rounded-[1rem] flex items-center gap-2 cursor-not-allowed uppercase tracking-widest opacity-80"
                         >
-                            <Calendar size={16} /> Schedule Session
+                            <Calendar size={14} strokeWidth={2.5} /> Schedule Session
                         </button>
                     )}
                     <Link 
                         to={`/patients/${patientId}/cases/add`}
-                        className="text-xs font-black text-blue-600 border border-blue-100 bg-blue-50 px-6 py-3.5 rounded-2xl flex items-center gap-2 hover:bg-blue-600 hover:text-white transition-all active:scale-95 uppercase tracking-widest medical-shadow"
+                        className="text-[10px] font-black text-blue-600 border-none bg-blue-50 px-4 py-2.5 rounded-[1rem] flex items-center gap-2 hover:bg-blue-600 hover:text-white transition-all active:scale-95 uppercase tracking-widest shadow-sm"
                     >
-                        <Plus size={16} /> New Case
+                        <Plus size={14} strokeWidth={2.5} /> New Case
                     </Link>
                 </>
             )}
@@ -664,26 +683,29 @@ export const CaseDetail = () => {
       <div className="space-y-10 pb-32 animate-in fade-in slide-in-from-bottom-4 duration-500 px-1">
         <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-                <button onClick={() => navigate(`/patients/${patientId}`)} className="p-2.5 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-slate-900 transition-all medical-shadow active:scale-90">
-                    <ArrowLeft size={20} />
+                <button onClick={() => navigate(`/patients/${patientId}`)} className="p-3 bg-white border border-slate-200 rounded-[1rem] text-slate-500 hover:text-slate-900 hover:border-slate-300 hover:shadow-lg hover:shadow-slate-200/50 transition-all active:scale-95 group">
+                    <ArrowLeft size={18} strokeWidth={2.5} className="group-hover:-translate-x-0.5 transition-transform" />
                 </button>
-                <div className="space-y-0.5">
-                    <p className="text-[10px] font-extrabold text-blue-600 uppercase tracking-[0.2em] leading-none mb-1">Clinic Archive</p>
-                    <h1 className="text-xl font-extrabold text-slate-950 tracking-tight leading-none font-display italic">{trCase.diagnosis}</h1>
+                <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(99,102,241,0.8)]" />
+                        <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em] leading-none mt-0.5">Clinic Archive</p>
+                    </div>
+                    <h1 className="text-2xl font-black text-slate-900 tracking-tight leading-none">{trCase.diagnosis}</h1>
                 </div>
             </div>
             {!isCompleted && (
                 trCase.status === 'Active' ? (
                     <button 
                       onClick={() => handleUpdateStatus('Completed')} 
-                      className="px-4 py-2 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 hover:text-white transition-all active:scale-95 medical-shadow"
+                      className="px-4 py-2.5 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-[1rem] text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 hover:text-white transition-all active:scale-95 shadow-sm"
                     >
                         Conclude
                     </button>
                 ) : (
                     <button 
                       onClick={() => handleUpdateStatus('Active')} 
-                      className="px-4 py-2 bg-blue-50 text-blue-600 border border-blue-100 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all active:scale-95 medical-shadow"
+                      className="px-4 py-2.5 bg-blue-50 text-blue-600 border border-blue-100 rounded-[1rem] text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all active:scale-95 shadow-sm"
                     >
                         Re-Deploy
                     </button>
@@ -705,28 +727,19 @@ export const CaseDetail = () => {
           </Card>
           {pendingEarnings > 0 && (
              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="col-span-2">
-                <Card className="p-6 bg-orange-50 border-orange-100 border-2 flex items-center justify-between shadow-none">
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-orange-100 text-orange-600 rounded-2xl flex items-center justify-center medical-shadow">
-                            <AlertCircle size={24} />
+                <Card className="p-5 sm:p-6 bg-gradient-to-r from-orange-50 to-amber-50/50 border border-orange-200/60 flex items-center justify-between rounded-[1.75rem] relative overflow-hidden group shadow-[0_8px_30px_-4px_rgba(249,115,22,0.1)] hover:shadow-[0_8px_30px_-4px_rgba(249,115,22,0.2)] transition-all duration-300">
+                    <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-orange-500/5 to-transparent pointer-events-none" />
+                    <div className="absolute -right-10 -top-10 w-32 h-32 bg-orange-500/10 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                    
+                    <div className="flex items-center gap-4 sm:gap-5 relative z-10 w-full">
+                        <div className="w-14 h-14 bg-white border border-orange-100 text-orange-500 rounded-[1.25rem] flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 group-hover:-rotate-3 transition-transform duration-300">
+                            <AlertCircle size={24} strokeWidth={2.5} />
                         </div>
-                        <div>
-                            <p className="text-[10px] font-black uppercase text-orange-400 tracking-widest mb-0.5">Outstanding Ledger</p>
-                            <p className="text-xl font-black text-orange-950 font-mono tracking-tight">{formatCurrency(pendingEarnings)}</p>
+                        <div className="space-y-1">
+                            <p className="text-[10px] font-black uppercase text-orange-600/70 tracking-[0.2em] leading-none mb-1.5">Outstanding Ledger</p>
+                            <p className="text-2xl font-black text-orange-950 font-mono tracking-tight leading-none group-hover:text-orange-600 transition-colors">{formatCurrency(pendingEarnings)}</p>
                         </div>
                     </div>
-                    <button 
-                        className="px-4 py-3 bg-white border border-orange-200 text-orange-600 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-orange-600 hover:text-white transition-all active:scale-95 medical-shadow"
-                        onClick={() => {
-                            const pending = sessions.find(s => s.paymentStatus === 'Pending');
-                            if (pending) {
-                                const msg = `Ref: Clinic Dues. Hello ${trCase.patientName || 'Patient'}, a protocol balance of ${formatCurrency(pendingEarnings)} is pending. Please optimize settlement at your convenience.`;
-                                shareOnWhatsApp(trCase.patientPhone || '', msg);
-                            }
-                        }}
-                    >
-                        Remit Notice
-                    </button>
                 </Card>
              </motion.div>
           )}
