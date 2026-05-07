@@ -1,0 +1,6 @@
+{
+  "name": "PhysioTrack",
+  "description": "Simple, fast, mobile-first physiotherapy home visit management app.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

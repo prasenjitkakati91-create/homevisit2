@@ -1,0 +1,70 @@
+{
+  "entities": {
+    "Patient": {
+      "title": "Patient",
+      "description": "Information about a physiotherapy patient",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Full name of the patient" },
+        "phone": { "type": "string", "description": "Contact number" },
+        "age": { "type": "integer", "description": "Age of the patient" },
+        "gender": { "type": "string", "enum": ["Male", "Female", "Other"] },
+        "address": { "type": "string", "description": "Home address for visits" },
+        "physioId": { "type": "string", "description": "UID of the physiotherapist" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "phone", "address", "physioId"]
+    },
+    "Case": {
+      "title": "Treatment Case",
+      "description": "A specific treatment episode for a patient",
+      "type": "object",
+      "properties": {
+        "diagnosis": { "type": "string" },
+        "condition": { "type": "string" },
+        "startDate": { "type": "string", "format": "date" },
+        "expectedSessions": { "type": "integer" },
+        "sessionFee": { "type": "number" },
+        "status": { "type": "string", "enum": ["Active", "Completed", "Paused"] },
+        "notes": { "type": "string" },
+        "patientId": { "type": "string" },
+        "physioId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["diagnosis", "patientId", "physioId", "sessionFee"]
+    },
+    "Session": {
+      "title": "Treatment Session",
+      "description": "A single home visit session",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string", "format": "date-time" },
+        "painScore": { "type": "integer" },
+        "treatmentDone": { "type": "string" },
+        "notes": { "type": "string" },
+        "paymentStatus": { "type": "string", "enum": ["Paid", "Pending"] },
+        "amountPaid": { "type": "number" },
+        "nextVisitDate": { "type": "string", "format": "date-time" },
+        "patientId": { "type": "string" },
+        "caseId": { "type": "string" },
+        "physioId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["date", "patientId", "caseId", "physioId"]
+    }
+  },
+  "firestore": {
+    "patients": {
+      "schema": "Patient",
+      "description": "Root collection for patients"
+    },
+    "patients/{patientId}/cases": {
+      "schema": "Case",
+      "description": "Historical and active cases for a patient"
+    },
+    "patients/{patientId}/cases/{caseId}/sessions": {
+      "schema": "Session",
+      "description": "Sessions belonging to a specific case"
+    }
+  }
+}
