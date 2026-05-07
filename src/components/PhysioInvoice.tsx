@@ -31,7 +31,7 @@ export const PhysioInvoice: React.FC<PhysioInvoiceProps> = ({ isOpen, onClose, p
     const invoiceNumber = `INV-${Date.now().toString().slice(-6)}`;
     const invoiceDate = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 
-    const downloadPDF = async () => {
+    const downloadPDF = async (share = false) => {
         if (!invoiceRef.current) return;
         
         try {
@@ -42,31 +42,49 @@ export const PhysioInvoice: React.FC<PhysioInvoiceProps> = ({ isOpen, onClose, p
                 logging: false,
                 backgroundColor: '#ffffff',
                 onclone: (clonedDoc) => {
-                    const elements = clonedDoc.getElementsByTagName('*');
-                    for (let i = 0; i < elements.length; i++) {
-                        const el = elements[i] as HTMLElement;
-                        const style = window.getComputedStyle(el);
-                        
-                        // Force standard colors for everything in computed styles
-                        ['backgroundColor', 'color', 'borderColor', 'fill', 'stroke'].forEach(prop => {
-                            const val = style.getPropertyValue(prop);
-                            if (val && val.includes('oklch')) {
-                                // Default fallback to blue if it was a blue-ish oklch, or just black/white
-                                if (prop === 'backgroundColor') el.style.setProperty(prop, '#ffffff', 'important');
-                                else if (prop === 'color') el.style.setProperty(prop, '#0f172a', 'important');
-                                else el.style.setProperty(prop, '#3b82f6', 'important');
-                            }
-                        });
-
-                        // CSS variables are the biggest culprits in Tailwind v4
-                        // We already have the .invoice-container style tag, but let's be double sure
-                        if (el.style.cssText.includes('oklch')) {
-                            el.style.cssText = el.style.cssText.replace(/oklch\([^)]+\)/g, '#3b82f6');
+                    // Create a global override style for the clone to simplify rendering
+                    const style = clonedDoc.createElement('style');
+                    style.innerHTML = `
+                        * { 
+                            box-shadow: none !important; 
+                            text-shadow: none !important; 
+                            transition: none !important;
+                            animation: none !important;
                         }
+                        /* Force visible colors if they are hidden/transparent due to complex variables */
+                        .invoice-container { background-color: white !important; }
+                    `;
+                    clonedDoc.head.appendChild(style);
 
-                        // Remove shadows as they often use complex color functions that fail in PDFs
-                        if (style.boxShadow && style.boxShadow !== 'none') {
-                            el.style.boxShadow = 'none';
+                    // Sanitize style tags for unsupported color functions
+                    const styleTags = Array.from(clonedDoc.getElementsByTagName('style'));
+                    styleTags.forEach(tag => {
+                        try {
+                            if (tag.innerHTML.includes('oklch') || tag.innerHTML.includes('oklab')) {
+                                // Robust regex to replace oklch/oklab with a standard color
+                                tag.innerHTML = tag.innerHTML.replace(/(oklch|oklab)\([^)]*\)/g, '#2563eb');
+                            }
+                            // Also clear out any @media or @container queries that might cause EOF parsing errors
+                            if (tag.innerHTML.includes('@container')) {
+                                tag.innerHTML = tag.innerHTML.replace(/@container[^{]+\{[^}]+\}/g, '');
+                            }
+                        } catch (e) {
+                            console.warn('Style sanitization failed', e);
+                        }
+                    });
+
+                    // Walk all elements to strip inline oklch/oklab and reset problematic styles
+                    const all = clonedDoc.getElementsByTagName('*');
+                    for (let i = 0; i < all.length; i++) {
+                        const el = all[i] as HTMLElement;
+                        if (el.style) {
+                            if (el.style.cssText.includes('oklch') || el.style.cssText.includes('oklab')) {
+                                el.style.cssText = el.style.cssText.replace(/(oklch|oklab)\([^)]*\)/g, '#2563eb');
+                            }
+                            // Force block layout or clear floats if necessary for simple canvas capturing
+                            if (window.getComputedStyle(el).display === 'flex') {
+                                // Keep flex but ensure it's not breaking
+                            }
                         }
                     }
                 }
@@ -83,16 +101,47 @@ export const PhysioInvoice: React.FC<PhysioInvoiceProps> = ({ isOpen, onClose, p
             const imgHeight = (canvas.height * imgWidth) / canvas.width;
             
             pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+            
+            if (share && (navigator as any).canShare) {
+                const blob = pdf.output('blob');
+                const file = new File([blob], `Invoice_${invoiceNumber}.pdf`, { type: 'application/pdf' });
+                if ((navigator as any).canShare({ files: [file] })) {
+                    await (navigator as any).share({
+                        files: [file],
+                        title: `Invoice ${invoiceNumber}`,
+                        text: `Physiotherapy invoice for ${patient.name}`
+                    });
+                    return;
+                }
+            }
+            
             pdf.save(`PhysioTrack_Invoice_${patient.name.replace(/\s+/g, '_')}.pdf`);
         } catch (error) {
             console.error('PDF generation failed:', error);
+            alert('PDF generation failed. Please try again or take a screenshot.');
         }
     };
 
+    const sendEmail = () => {
+        const subject = `PhysioTrack: Invoice ${invoiceNumber} - ${patient.name}`;
+        const body = `Hello ${patient.name},\n\nYour physiotherapy treatment invoice (${invoiceNumber}) for the amount of ${formatCurrency(dues.total)} has been generated.\n\nSummary:\n- Patient: ${patient.name}\n- Date: ${invoiceDate}\n- Total Dues: ${formatCurrency(dues.total)}\n\nThank you for choosing PhysioTrack.\n\nBest regards,\n${user?.name || 'PhysioTrack Admin'}`;
+        window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    };
+
     const shareWhatsApp = () => {
-        const message = `Hello ${patient.name}, \nYour physiotherapy home visit invoice (${invoiceNumber}) for ${formatCurrency(dues.total)} is ready. \nThank you. \n- ${user?.name || 'PhysioTrack'}`;
+        const message = `Hello *${patient.name}*,\nYour physiotherapy home visit code *${invoiceNumber}* for *${formatCurrency(dues.total)}* is attached.\n\nThank you.\n- ${user?.name || 'PhysioTrack'}`;
         const encoded = encodeURIComponent(message);
         window.open(`https://wa.me/${patient.phone.replace(/\D/g, '')}?text=${encoded}`, '_blank');
+    };
+
+    const handleWhatsAppAction = async () => {
+        try {
+            await downloadPDF(true);
+            shareWhatsApp();
+        } catch (error) {
+            console.error("WhatsApp action failed", error);
+            shareWhatsApp();
+        }
     };
 
     const getStatusBadge = () => {
@@ -122,15 +171,6 @@ export const PhysioInvoice: React.FC<PhysioInvoiceProps> = ({ isOpen, onClose, p
                             <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest italic">Invoice <span className="not-italic text-blue-600">Engine</span></h2>
                         </div>
                         <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm" onClick={() => window.print()} className="rounded-xl px-4 h-10 border-slate-200">
-                                <Printer size={16} className="mr-2" />
-                                <span className="hidden sm:inline">Print</span>
-                            </Button>
-                            <Button variant="neutral" size="sm" onClick={downloadPDF} className="rounded-xl px-4 h-10 bg-slate-900 text-white border-none hover:bg-slate-800">
-                                <Download size={16} className="mr-2" />
-                                <span className="hidden sm:inline">PDF</span>
-                            </Button>
-                            <div className="w-[1px] h-6 bg-slate-200 mx-1" />
                             <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-900 transition-colors">
                                 <X size={24} />
                             </button>
@@ -160,6 +200,7 @@ export const PhysioInvoice: React.FC<PhysioInvoiceProps> = ({ isOpen, onClose, p
                                 }
                                 .invoice-container * {
                                     color-scheme: light !important;
+                                    box-shadow: none !important;
                                 }
                             `}} />
                             
@@ -333,7 +374,7 @@ export const PhysioInvoice: React.FC<PhysioInvoiceProps> = ({ isOpen, onClose, p
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 print:hidden px-4 sm:px-0">
                             <Button 
                                 className="h-16 rounded-[1.5rem] bg-green-600 hover:bg-green-700 text-white border-none shadow-lg shadow-green-100 space-x-3 transition-all active:scale-95 flex items-center justify-center"
-                                onClick={shareWhatsApp}
+                                onClick={handleWhatsAppAction}
                             >
                                 <MessageCircle size={20} />
                                 <div className="text-left">
@@ -354,7 +395,7 @@ export const PhysioInvoice: React.FC<PhysioInvoiceProps> = ({ isOpen, onClose, p
                             <Button 
                                 variant="outline"
                                 className="h-16 rounded-[1.5rem] bg-white border-slate-200 text-slate-600 space-x-3 transition-all active:scale-95 hover:border-blue-400 group flex items-center justify-center"
-                                onClick={() => {}}
+                                onClick={sendEmail}
                             >
                                 <Send size={20} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                                 <div className="text-left">
