@@ -23,7 +23,7 @@ import { formatCurrency, formatDate } from "../utils/helpers";
 import { useAuth } from "../context/AuthContext";
 import { Button, Badge } from "./ui/Generic";
 import { jsPDF } from "jspdf";
-import * as htmlToImage from "html-to-image";
+import html2canvas from "html2canvas";
 
 interface PhysioInvoiceProps {
   isOpen: boolean;
@@ -72,32 +72,59 @@ export const PhysioInvoice: React.FC<PhysioInvoiceProps> = ({
     if (!invoiceRef.current) return;
 
     setIsPdfLoading(true);
-    showToast("Preparing PDF...", "info");
+    showToast("Generating PDF...", "info");
+
+    // Temporarily sanitizing styles to prevent html2canvas oklab/oklch errors
+    const styleTags = Array.from(document.querySelectorAll("style"));
+    const originalStyles = styleTags.map((tag) => tag.innerHTML);
 
     try {
-      const element = invoiceRef.current;
-      
-      // Ensure the element is visible and has proper background for capture
-      const originalStyle = element.style.cssText;
-      element.style.backgroundColor = "#ffffff";
-      
-      // Add a class for PDF specific overrides if needed
-      element.classList.add("pdf-export");
-
-      // We use toPng because it's generally more stable across browsers
-      const dataUrl = await htmlToImage.toPng(element, {
-        quality: 1,
-        pixelRatio: 2,
-        backgroundColor: "#ffffff",
-        style: {
-          transform: 'none',
-          margin: '0',
+      // Apply safe fallbacks for oklab, oklch and color-mix
+      styleTags.forEach((tag) => {
+        if (
+          tag.innerHTML.includes("okl") ||
+          tag.innerHTML.includes("color-mix")
+        ) {
+          let text = tag.innerHTML;
+          // Replace modern color functions with white (safe fallback to prevent crash)
+          text = text.replace(/(oklch|oklab)\([^)]+\)/g, "#ffffff");
+          text = text.replace(/color-mix\([^)]+\)/g, "#ffffff");
+          // Replace color space indications that might confuse older parsers
+          text = text.replace(/in oklab|in oklch/g, "in srgb");
+          tag.innerHTML = text;
         }
       });
 
-      // Cleanup
-      element.classList.remove("pdf-export");
-      element.style.cssText = originalStyle;
+      const element = invoiceRef.current;
+
+      // Ensure the element is visible and has proper background for capture
+      const originalStyle = element.style.cssText;
+      element.style.backgroundColor = "#ffffff";
+
+      element.classList.add("pdf-export");
+
+      // STEP 1 & 2: Capture and convert to canvas
+      const canvas = await html2canvas(element, {
+        scale: 3, // Increased scale for better mobile export quality
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        logging: false,
+        onclone: (clonedDoc) => {
+          const clonedElement = clonedDoc.getElementById("invoice-container");
+          if (clonedElement) {
+            clonedElement.style.boxShadow = "none";
+            clonedElement.style.border = "none";
+            clonedElement.style.width = "800px"; // Force width during capture for consistent layout
+            clonedElement.style.margin = "0";
+            clonedElement.style.padding = "40px";
+          }
+        },
+      });
+
+      // Cleanup CSS overrides occurs in finally block
+
+      // STEP 3: Generate PDF
+      const imgData = canvas.toDataURL("image/png");
 
       const pdf = new jsPDF({
         orientation: "portrait",
@@ -105,33 +132,39 @@ export const PhysioInvoice: React.FC<PhysioInvoiceProps> = ({
         format: "a4",
       });
 
-      // Calculate dimensions to fit A4
-      const img = new Image();
-      img.src = dataUrl;
-      await new Promise((resolve) => (img.onload = resolve));
+      const pdfWidth = 210;
+      const imgWidth = pdfWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (img.height * pdfWidth) / img.width;
+      pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight, undefined, "FAST");
 
-      pdf.addImage(dataUrl, "PNG", 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
-      pdf.save(`Invoice-${invoiceNumber.replace(/\s+/g, '-')}.pdf`);
-      
+      // STEP 4: Save
+      pdf.save(`Invoice-${invoiceNumber.replace(/\s+/g, "-")}.pdf`);
+
       showToast("PDF downloaded successfully", "success");
+      return pdf; // Return for sharing if needed
     } catch (error) {
       console.error("PDF generation failed:", error);
       showToast("Error generating PDF. Please try again.", "error");
+      return null;
     } finally {
+      // Restore original styles
+      styleTags.forEach((tag, index) => {
+        tag.innerHTML = originalStyles[index];
+      });
+      if (invoiceRef.current) {
+        invoiceRef.current.classList.remove("pdf-export");
+        invoiceRef.current.style.cssText = ""; // Reset inline styles
+      }
       setIsPdfLoading(false);
     }
   };
 
-  const sendEmail = () => {
-    const subject = `PhysioTrack: Invoice ${invoiceNumber} - ${patient.name}`;
-    const body = `Hello ${patient.name},\n\nYour physiotherapy treatment invoice (${invoiceNumber}) for the amount of ${formatCurrency(dues.total)} has been generated.\n\nSummary:\n- Patient: ${patient.name}\n- Date: ${invoiceDate}\n- Total Dues: ${formatCurrency(dues.total)}\n\nThank you for choosing PhysioTrack.\n\nBest regards,\n${user?.name || "PhysioTrack Admin"}`;
-    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  const handlePrint = () => {
+    window.print();
   };
 
-  const shareWhatsApp = () => {
+  const shareWhatsApp = async () => {
     setIsWaLoading(true);
     showToast("Opening WhatsApp...", "info");
 
@@ -146,14 +179,15 @@ export const PhysioInvoice: React.FC<PhysioInvoiceProps> = ({
       const formattedPhone =
         phoneNumber.length === 10 ? `91${phoneNumber}` : phoneNumber;
 
-      const message = `*PHYSIOTRACK CLINICAL INVOICE*\n\nHello *${patient.name}*,\n\nYour physiotherapy treatment invoice is ready for review.\n\n*Invoice No:* ${invoiceNumber}\n*Date:* ${invoiceDate}\n*Total Outstanding:* ${formatCurrency(dues.total)}\n\n*Treatment summary:* ${dues.count} sessions recorded.\n\nThank you for choosing PhysioTrack for your recovery.\n\n_Generated by ${user?.name || "Dr. Trishnamoni Haloi"}_`;
+      const message = `Hello *${patient.name}*,\n\nYour physiotherapy treatment invoice is ready.\n\n*Invoice No:* ${invoiceNumber}\n*Total Outstanding:* ${formatCurrency(dues.total)}\n\nThank you for your visit.\n\n_Dr. Trishnamoni Haloi (PT)_`;
       const encodedMessage = encodeURIComponent(message);
 
-      window.open(
-        `https://wa.me/${formattedPhone}?text=${encodedMessage}`,
-        "_blank",
-      );
-      showToast("WhatsApp opened successfully", "success");
+      // Simple, reliable wa.me link
+      const whatsappUrl = `https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodedMessage}`;
+      
+      // Open in new tab
+      window.open(whatsappUrl, "_blank");
+      showToast("WhatsApp opened", "success");
     } catch (err) {
       console.error("WhatsApp error", err);
       showToast("Failed to open WhatsApp", "error");
@@ -175,68 +209,57 @@ export const PhysioInvoice: React.FC<PhysioInvoiceProps> = ({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 bg-slate-900/40 backdrop-blur-sm print:p-0 print:bg-white print:backdrop-none overflow-y-auto">
+      <div className="fixed inset-0 z-[60] flex items-center justify-center p-0 sm:p-6 bg-slate-900/40 backdrop-blur-sm print:p-0 print:bg-white print:backdrop-none overflow-y-auto">
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="w-full max-w-3xl bg-slate-50/50 rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col my-auto print:shadow-none print:rounded-none print:static"
+          className="w-full h-full sm:h-auto sm:max-w-3xl bg-slate-50/50 rounded-none sm:rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col my-auto print:shadow-none print:rounded-none print:static"
         >
           {/* Header - Control Bar (Hidden on Print) */}
-          <div className="px-8 py-5 bg-white border-b border-slate-100 flex items-center justify-between print:hidden">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
-                <CreditCard size={20} />
+          <div className="px-4 sm:px-8 py-4 sm:py-5 bg-white border-b border-slate-100 flex items-center justify-between print:hidden">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="p-1.5 sm:p-2 bg-blue-50 text-blue-600 rounded-xl">
+                <CreditCard size={18} />
               </div>
-              <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest italic">
+              <h2 className="text-xs sm:text-sm font-black text-slate-800 uppercase tracking-widest italic">
                 Invoice <span className="not-italic text-blue-600">Engine</span>
               </h2>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
+              <button
+                onClick={handlePrint}
+                className="p-1.5 sm:p-2 text-slate-400 hover:text-blue-600 transition-colors"
+                title="Print Invoice"
+              >
+                <Printer size={18} />
+              </button>
               <button
                 onClick={onClose}
-                className="p-2 text-slate-400 hover:text-slate-900 transition-colors"
+                className="p-1.5 sm:p-2 text-slate-400 hover:text-slate-900 transition-colors"
               >
-                <X size={24} />
+                <X size={20} />
               </button>
             </div>
           </div>
 
           {/* Printable Area */}
-          <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-6 print:overflow-visible print:p-0">
+          <div className="flex-1 overflow-y-auto p-0 sm:p-8 space-y-4 sm:space-y-6 print:overflow-visible print:p-0">
             <div
               ref={invoiceRef}
-              className="invoice-container bg-white rounded-[2rem] border border-slate-100 p-8 sm:p-12 space-y-10 print:p-0"
+              id="invoice-container"
+              className="invoice-container bg-white rounded-none sm:rounded-[2rem] border-x-0 sm:border border-slate-100 p-4 sm:p-12 space-y-8 sm:space-y-10 print:p-0"
             >
               {/* Medical Header */}
               <div className="flex flex-col sm:flex-row justify-between items-start gap-8">
                 <div className="space-y-6">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white bg-blue-600 shadow-lg shadow-blue-600/10">
-                      <Activity size={24} strokeWidth={2.5} />
-                    </div>
-                    <div>
-                      <h1 className="text-2xl font-black tracking-tighter leading-none italic text-slate-900">
-                        Physio
-                        <span className="font-bold not-italic text-blue-600">
-                          Track
-                        </span>
-                      </h1>
-                      <p className="text-[10px] font-bold uppercase tracking-[0.3em] mt-1 text-slate-400">
-                        Clinical Ledger System
-                      </p>
-                    </div>
-                  </div>
                   <div className="space-y-1">
                     <h3 className="text-lg font-black leading-tight text-slate-900">
                       {user?.name || "Trishnamoni Haloi (PT)"}
                     </h3>
-                    <p className="text-xs font-bold uppercase tracking-widest text-blue-600">
-                      BPT, MPT (Orthopedic Physiotherapy)
-                    </p>
                     <div className="pt-2 space-y-1">
                       <p className="text-[10px] font-semibold flex items-center gap-2 text-slate-500">
-                        <Phone size={10} /> +91-XXXXXXXXXX
+                        <Phone size={10} /> +91-8473809386
                       </p>
                       <p className="text-[10px] font-semibold flex items-center gap-2 text-slate-500">
                         <MapPin size={10} /> Guwahati, Assam, India
@@ -335,17 +358,17 @@ export const PhysioInvoice: React.FC<PhysioInvoiceProps> = ({
                     {dues.count} Unpaid Sessions
                   </div>
                 </div>
-                <div className="border rounded-[2rem] overflow-hidden border-slate-100">
-                  <table className="w-full text-left border-collapse">
+                <div className="border rounded-2xl sm:rounded-[2rem] overflow-x-auto border-slate-100">
+                  <table className="w-full text-left border-collapse min-w-[450px] sm:min-w-0">
                     <thead>
                       <tr className="bg-slate-50">
-                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                        <th className="px-4 sm:px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">
                           Date
                         </th>
-                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                        <th className="px-4 sm:px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">
                           Protocol / Treatment
                         </th>
-                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-right text-slate-400">
+                        <th className="px-4 sm:px-6 py-4 text-[10px] font-black uppercase tracking-widest text-right text-slate-400">
                           Fee
                         </th>
                       </tr>
@@ -356,12 +379,12 @@ export const PhysioInvoice: React.FC<PhysioInvoiceProps> = ({
                           key={i}
                           className="text-sm border-b border-slate-50"
                         >
-                          <td className="px-6 py-4 font-mono font-bold whitespace-nowrap text-slate-500">
+                          <td className="px-4 sm:px-6 py-4 font-mono font-bold whitespace-nowrap text-slate-500 text-xs sm:text-sm">
                             {formatDate(s.date)}
                           </td>
-                          <td className="px-6 py-4 font-bold text-slate-900">
+                          <td className="px-4 sm:px-6 py-4 font-bold text-slate-900">
                             <div className="space-y-0.5">
-                              <p className="font-black leading-tight text-slate-900">
+                              <p className="font-black leading-tight text-slate-900 text-xs sm:text-sm">
                                 {s.diagnosis || "Therapeutic Session"}
                               </p>
                               <p className="text-[10px] font-bold uppercase tracking-tighter text-blue-400">
@@ -369,26 +392,26 @@ export const PhysioInvoice: React.FC<PhysioInvoiceProps> = ({
                               </p>
                             </div>
                           </td>
-                          <td className="px-6 py-4 text-right font-mono font-black text-slate-950">
+                          <td className="px-4 sm:px-6 py-4 text-right font-mono font-black text-slate-950 text-xs sm:text-sm">
                             {formatCurrency(s.sessionFee || 500)}
                           </td>
                         </tr>
                       ))}
                     </tbody>
                     <tfoot>
-                      <tr className="bg-slate-50">
-                        <td colSpan={2} className="px-6 py-8 text-right">
+                      <tr className="bg-slate-50 border-t border-slate-100">
+                        <td colSpan={2} className="px-4 sm:px-6 py-6 sm:py-8 text-right">
                           <div className="space-y-1">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                            <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-slate-400">
                               Grand Total to Pay
                             </p>
-                            <p className="text-xs font-bold italic text-slate-500">
-                              Net inclusive of all consultation charges
+                            <p className="text-[10px] sm:text-xs font-bold italic text-slate-500">
+                              Net inclusive of all clinical consultation charges
                             </p>
                           </div>
                         </td>
-                        <td className="px-6 py-8 text-right">
-                          <p className="text-3xl font-black font-mono tracking-tighter text-blue-600">
+                        <td className="px-4 sm:px-6 py-6 sm:py-8 text-right">
+                          <p className="text-2xl sm:text-3xl font-black font-mono tracking-tighter text-blue-600">
                             {formatCurrency(dues.total)}
                           </p>
                         </td>
@@ -422,32 +445,13 @@ export const PhysioInvoice: React.FC<PhysioInvoiceProps> = ({
                     </div>
                   </div>
                 </div>
-                <div className="flex flex-col justify-end items-end space-y-10">
-                  <div className="text-right space-y-1">
-                    <p className="text-[10px] font-black uppercase tracking-[0.4em] mb-8 text-slate-300">
-                      Clinical Head Signature
-                    </p>
-                    <div className="w-48 h-[2px] mb-2 ml-auto bg-slate-100" />
-                    <p className="font-black tracking-tighter italic text-xl text-slate-900">
-                      {user?.name || "Practitioner Name"}
-                    </p>
-                    <p className="text-[8px] font-bold uppercase tracking-widest text-blue-500">
-                      Verified Digital Entry
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="pt-8 text-center border-t border-slate-50">
-                <p className="text-[9px] font-black uppercase tracking-[0.5em] text-slate-300">
-                  Thank you for choosing PhysioTrack • Your Recovery is Our
-                  Priority
-                </p>
-              </div>
+              {/* Final Footer Spacer */}
+              <div className="pt-6" />
             </div>
+          </div>
 
             {/* Action Buttons Container (Hidden on Print) */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 print:hidden px-4 sm:px-0">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 print:hidden px-4 sm:px-0">
               <Button
                 className="h-16 rounded-[1.5rem] bg-green-600 hover:bg-green-700 text-white border-none shadow-lg shadow-green-100 space-x-3 transition-all active:scale-95 flex items-center justify-center disabled:opacity-80 disabled:cursor-not-allowed"
                 onClick={shareWhatsApp}
@@ -480,22 +484,6 @@ export const PhysioInvoice: React.FC<PhysioInvoiceProps> = ({
                     Export to
                   </p>
                   <p className="text-sm font-bold">PDF Invoice</p>
-                </div>
-              </Button>
-              <Button
-                variant="outline"
-                className="h-16 rounded-[1.5rem] bg-white border-slate-200 text-slate-600 space-x-3 transition-all active:scale-95 hover:border-blue-400 group flex items-center justify-center"
-                onClick={sendEmail}
-              >
-                <Send
-                  size={20}
-                  className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform"
-                />
-                <div className="text-left">
-                  <p className="text-[10px] font-black uppercase tracking-widest leading-none opacity-40">
-                    Direct
-                  </p>
-                  <p className="text-sm font-bold">Email to Patient</p>
                 </div>
               </Button>
             </div>

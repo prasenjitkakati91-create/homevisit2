@@ -49,13 +49,30 @@
 @layer base {
   body {
     -webkit-tap-highlight-color: transparent;
-    @apply bg-slate-50 text-slate-900 antialiased selection:bg-blue-100 selection:text-blue-900 overflow-x-hidden;
+    @apply bg-[#F8FAFC] text-slate-900 antialiased selection:bg-blue-100 selection:text-blue-900 overflow-x-hidden;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+  
+  /* Smooth scrolling for mobile */
+  html {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
   }
 }
 
 @layer components {
   .glass-card {
-    @apply bg-white/80 backdrop-blur-md border border-slate-200/60 shadow-sm;
+    @apply bg-white/70 backdrop-blur-xl border border-white/40 shadow-sm transition-all duration-300;
+  }
+
+  .premium-shadow {
+    box-shadow: 0 10px 40px -10px rgba(15, 23, 42, 0.05),
+                0 4px 12px -2px rgba(15, 23, 42, 0.03);
+  }
+
+  .premium-shadow-hover {
+    box-shadow: 0 20px 50px -12px rgba(15, 23, 42, 0.1),
+                0 8px 24px -4px rgba(15, 23, 42, 0.05);
   }
 
   .medical-shadow {
@@ -65,7 +82,11 @@
   }
 
   .pb-safe {
-    padding-bottom: env(safe-area-inset-bottom);
+    padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
+  }
+  
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
   }
 
   .no-scrollbar::-webkit-scrollbar {
@@ -84,4 +105,44 @@
     animation: none !important;
     background: #ffffff !important;
   }
+  
+  /* Premium Skeleton Effect */
+  .skeleton {
+    @apply bg-slate-100 relative overflow-hidden;
+  }
+  .skeleton::after {
+    @apply absolute inset-0 -translate-x-full;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    animation: shimmer 1.5s infinite;
+    content: "";
+  }
+  @keyframes shimmer {
+    100% { transform: translateX(100%); }
+  }
 }
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  #invoice-container,
+  #invoice-container * {
+    visibility: visible;
+  }
+
+  #invoice-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .print\:hidden {
+    display: none !important;
+  }
+}
+

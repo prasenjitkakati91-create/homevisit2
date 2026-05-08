@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { Badge, Card, Button, Input, Select, Textarea } from '../components/ui/Generic';
+import { Badge, Card, Button, Input, Select, Textarea, GlassCard } from '../components/ui/Generic';
 import { patientService } from '../services/db';
-import { ArrowLeft, UserPlus, Search as SearchIcon, Phone, Trash2, Users, ArrowRight } from 'lucide-react';
+import { ArrowLeft, UserPlus, Search as SearchIcon, Phone, Users, ChevronRight, Activity } from 'lucide-react';
 import { toast } from 'sonner';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export const AddPatient = () => {
     const navigate = useNavigate();
@@ -36,36 +36,34 @@ export const AddPatient = () => {
           navigate(`/patients/${docRef.id}`);
         }
       } catch (err: any) {
-        console.error('Registration full error:', err);
-        let errorMsg = 'Failed to create patient profile';
-        try {
-          const parsed = JSON.parse(err.message);
-          if (parsed.error.includes('permissions')) {
-            errorMsg += ': Permission Denied. Please check Firestore rules.';
-          }
-        } catch (e) {}
-        toast.error(errorMsg);
+        console.error('Registration error:', err);
+        toast.error('Failed to create patient profile');
       } finally {
         setLoading(false);
       }
     };
   
     return (
-      <div className="space-y-8 pb-20">
-        <div className="flex items-center gap-4 px-1">
-          <button onClick={() => navigate(-1)} className="p-2.5 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-slate-900 transition-all medical-shadow active:scale-90">
-            <ArrowLeft size={20} />
+      <div className="space-y-8 pb-10">
+        <div className="flex items-center gap-4 px-2">
+          <button onClick={() => navigate(-1)} className="p-3 bg-white border border-slate-100 rounded-2xl text-slate-400 hover:text-slate-900 transition-all shadow-sm active:scale-90">
+            <ArrowLeft size={20} strokeWidth={2.5} />
           </button>
           <div className="space-y-0.5">
-            <p className="text-[10px] font-extrabold text-blue-600 uppercase tracking-[0.2em]">Patient Records Service</p>
-            <h1 className="text-2xl font-extrabold text-slate-950 tracking-tight font-display italic">Registration <span className="not-italic text-blue-600">Protocol</span></h1>
+            <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Medical Intelligence</p>
+            <h1 className="text-xl font-black text-slate-950 tracking-tight leading-none italic">New <span className="not-italic">Registration</span></h1>
           </div>
         </div>
   
-        <form onSubmit={handleSubmit} className="space-y-6 px-1 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <Card className="p-8 space-y-6 border-slate-200 shadow-xl shadow-slate-100 bg-white">
+        <motion.form 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          onSubmit={handleSubmit} 
+          className="space-y-6 px-2"
+        >
+          <Card className="p-7 space-y-6">
             <Input
-              label="Patient Full Name"
+              label="Full Name"
               placeholder="e.g. Rahul Sharma"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -111,17 +109,17 @@ export const AddPatient = () => {
             />
             <Textarea
               label="Deployment Address"
-              placeholder="Enter complete address for primary visits..."
+              placeholder="Enter complete address..."
               value={formData.address}
               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
               required
             />
           </Card>
           
-          <Button type="submit" className="w-full py-6 text-sm rounded-[1.5rem]" loading={loading}>
-            Initialize Patient Record
+          <Button type="submit" className="w-full py-5 rounded-[2rem]" loading={loading}>
+            Confirm Registration
           </Button>
-        </form>
+        </motion.form>
       </div>
     );
   };
@@ -175,7 +173,6 @@ export const EditPatient = () => {
         toast.success('Patient profile updated');
         navigate(`/patients/${patientId}`);
       } catch (err: any) {
-        console.error('Update error:', err);
         toast.error('Failed to update patient profile');
       } finally {
         setLoading(false);
@@ -183,26 +180,31 @@ export const EditPatient = () => {
     };
 
     if (fetching) return (
-        <div className="p-10 space-y-6">
-            <div className="h-10 w-24 bg-slate-200 animate-pulse rounded-xl" />
-            <div className="h-96 bg-white border border-slate-100 rounded-[2.5rem] animate-pulse" />
+        <div className="p-8 space-y-6">
+            <div className="h-10 w-24 bg-slate-100 animate-pulse rounded-2xl" />
+            <div className="h-96 bg-white border border-slate-50 rounded-[3rem] animate-pulse" />
         </div>
     );
   
     return (
-      <div className="space-y-8 pb-20">
-        <div className="flex items-center gap-4 px-1">
-          <button onClick={() => navigate(-1)} className="p-2.5 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-slate-900 transition-all medical-shadow active:scale-90">
-            <ArrowLeft size={20} />
+      <div className="space-y-8 pb-10">
+        <div className="flex items-center gap-4 px-2">
+          <button onClick={() => navigate(-1)} className="p-3 bg-white border border-slate-100 rounded-2xl text-slate-400 hover:text-slate-900 transition-all shadow-sm active:scale-90">
+            <ArrowLeft size={20} strokeWidth={2.5} />
           </button>
           <div className="space-y-0.5">
-            <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em]">Maintenance</p>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tighter">Edit Record</h1>
+            <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Maintenance</p>
+            <h1 className="text-xl font-black text-slate-900 tracking-tight leading-none italic">Edit <span className="not-italic">Record</span></h1>
           </div>
         </div>
   
-        <form onSubmit={handleSubmit} className="space-y-6 px-1 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <Card className="p-8 space-y-6 border-slate-200 shadow-xl shadow-slate-100 bg-white">
+        <motion.form 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          onSubmit={handleSubmit} 
+          className="space-y-6 px-2"
+        >
+          <Card className="p-7 space-y-6">
             <Input
               label="Full Name"
               value={formData.name}
@@ -252,10 +254,10 @@ export const EditPatient = () => {
               required
             />
           </Card>
-          <Button type="submit" className="w-full py-6 text-sm rounded-[1.5rem]" loading={loading}>
-            Commit Changes
+          <Button type="submit" className="w-full py-5 rounded-[2rem]" loading={loading}>
+            Save Changes
           </Button>
-        </form>
+        </motion.form>
       </div>
     );
   };
@@ -286,98 +288,100 @@ export const PatientList = () => {
   );
 
   return (
-    <div className="space-y-8 pb-24">
-      <div className="flex items-center justify-between px-1">
+    <div className="space-y-8 pb-10">
+      <div className="flex items-center justify-between px-2">
         <div className="space-y-0.5">
-            <p className="text-[10px] font-extrabold text-blue-600 uppercase tracking-[0.2em] animate-in fade-in slide-in-from-bottom-2 duration-700">Central Database</p>
-            <h1 className="text-3xl font-extrabold text-slate-950 tracking-tight leading-tight animate-in fade-in slide-in-from-bottom-3 duration-700 font-display italic">Patient <span className="not-italic text-blue-600">Index</span></h1>
+            <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest leading-none mb-1">Central Archive</p>
+            <h1 className="text-2xl font-black text-slate-950 tracking-tight leading-none italic font-display">Patient <span className="not-italic text-blue-600">Database</span></h1>
         </div>
-        <Button size="sm" onClick={() => navigate('/patients/add')} className="rounded-xl px-4 h-11 font-display font-bold">
-           <UserPlus size={18} className="mr-2" />
-           New Entry
+        <Button size="icon" variant="primary" onClick={() => navigate('/patients/add')} className="rounded-2xl w-12 h-12 shadow-blue-500/20">
+           <UserPlus size={20} strokeWidth={2.5} />
         </Button>
       </div>
 
-      <div className="relative group mx-1">
-        <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors pointer-events-none">
-            <SearchIcon size={18} />
+      <div className="px-2">
+        <div className="relative group">
+          <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors pointer-events-none">
+              <SearchIcon size={18} strokeWidth={2.5} />
+          </div>
+          <input 
+            type="text"
+            placeholder="Search records..."
+            className="w-full pl-12 pr-6 py-4.5 bg-white border border-slate-100 rounded-[2rem] text-sm font-medium focus:ring-4 focus:ring-blue-600/5 focus:border-blue-300 outline-none shadow-sm transition-all placeholder:text-slate-300"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
-        <input 
-          type="text"
-          placeholder="Lookup name or contact record..."
-          className="w-full pl-12 pr-6 py-4.5 bg-white border border-slate-200/60 rounded-[1.5rem] text-sm font-medium focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none shadow-sm transition-all placeholder:text-slate-300"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
       </div>
 
       {loading ? (
-        <div className="space-y-4 px-1">
-          {[1, 2, 3, 4, 5].map(i => <div key={i} className="h-28 bg-white border border-slate-100 rounded-[2rem] animate-pulse" />)}
+        <div className="space-y-4 px-2">
+          {[1, 2, 3, 4, 5].map(i => <div key={i} className="h-24 bg-white border border-slate-50 rounded-[2.5rem] animate-pulse" />)}
         </div>
       ) : filteredPatients.length === 0 ? (
-        <div className="bg-white mx-1 p-16 rounded-[2.5rem] border border-dashed border-slate-200 text-center space-y-4">
-          <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center text-slate-200 mx-auto">
-             <Users size={32} />
-          </div>
-          <div className="space-y-1">
-             <p className="text-slate-900 font-bold">Registry Empty</p>
-             <p className="text-slate-400 text-xs font-medium uppercase tracking-[0.05em]">No matching records found in database</p>
-          </div>
-          <Button variant="outline" size="sm" onClick={() => setSearchTerm('')} className="rounded-xl mt-2">Reset Buffer</Button>
+        <div className="px-2">
+          <GlassCard className="flex flex-col items-center justify-center py-16 text-center space-y-5 border-dashed border-slate-200">
+            <div className="w-16 h-16 bg-white/50 rounded-3xl flex items-center justify-center text-slate-200 shadow-sm border border-white">
+               <Users size={32} />
+            </div>
+            <div className="space-y-1">
+               <p className="text-slate-900 font-bold text-sm tracking-tight text-center">No Records Found</p>
+               <p className="text-slate-400 text-[10px] font-medium uppercase tracking-widest text-center">Update your search parameters</p>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => setSearchTerm('')} className="rounded-xl mt-2 bg-white border-slate-200">Clear Search</Button>
+          </GlassCard>
         </div>
       ) : (
-        <div className="space-y-3 px-1">
-          {filteredPatients.map((patient: any, idx: number) => (
-            <motion.div
-                key={patient.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.03 }}
-            >
-                <Link to={`/patients/${patient.id}`}>
-                    <Card 
-                    className="flex flex-col sm:flex-row sm:items-center justify-between p-5 hover:border-blue-500 hover:shadow-xl hover:shadow-blue-900/5 active:scale-[0.98] transition-all duration-300 cursor-pointer group bg-white border-slate-200 rounded-[2rem] relative overflow-hidden"
-                    >
-                        {/* Decorative background element */}
-                        <div className="absolute -right-10 -top-10 w-32 h-32 bg-blue-50 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                        
-                        <div className="flex items-center gap-5 relative z-10">
-                            <div className="w-16 h-16 bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200/60 rounded-[1.25rem] flex items-center justify-center text-slate-700 font-extrabold text-2xl group-hover:bg-gradient-to-br group-hover:from-blue-600 group-hover:to-indigo-600 group-hover:text-white group-hover:border-blue-500 transition-all duration-300 shadow-sm shrink-0">
-                                {patient.name?.[0] || 'P'}
-                            </div>
-                            <div className="space-y-1">
-                                <h3 className="font-black text-lg text-slate-900 group-hover:text-blue-700 transition-colors leading-tight tracking-tight">{patient.name || 'Unknown'}</h3>
-                                <div className="flex flex-wrap items-center gap-2.5">
-                                    <div className="flex items-center gap-1.5 text-slate-500 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-100 group-hover:bg-blue-50 group-hover:border-blue-100 group-hover:text-blue-600 transition-colors">
-                                        <Phone size={10} strokeWidth={3} />
-                                        <p className="text-[10px] font-black uppercase tracking-widest leading-none mt-0.5">{patient.phone || 'N/A'}</p>
-                                    </div>
-                                    <div className="flex items-center gap-1.5 text-slate-400">
-                                        <div className="w-1 h-1 rounded-full bg-slate-300" />
-                                        <p className="text-[10px] font-bold uppercase tracking-wider mt-0.5">{patient.age ? `${patient.age}Y` : 'N/A'} • {patient.gender?.[0] || 'U'}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div className="flex items-center justify-between sm:justify-end gap-6 mt-4 sm:mt-0 relative z-10 pt-4 sm:pt-0 border-t sm:border-t-0 border-slate-100">
-                            <div className="flex flex-col sm:items-end">
-                                <p className="text-[9px] uppercase font-black text-slate-400 tracking-[0.2em] leading-none mb-1.5">Current Status</p>
-                                <Badge variant={patient?.status === 'Completed' ? 'success' : patient?.status === 'Inactive' ? 'neutral' : 'info'} className="px-3 py-1 font-bold text-[10px] shadow-sm">
-                                    {patient?.status || 'Active'}
-                                </Badge>
-                            </div>
-                            <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-blue-600 group-hover:scale-110 transition-all duration-300">
-                                <ArrowRight size={16} className="text-slate-400 group-hover:text-white transition-colors" />
-                            </div>
-                        </div>
-                    </Card>
-                </Link>
-            </motion.div>
-          ))}
+        <div className="space-y-3 px-2">
+          <AnimatePresence mode="popLayout">
+            {filteredPatients.map((patient: any, idx: number) => (
+              <motion.div
+                  key={patient.id}
+                  layout
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ delay: idx * 0.02, duration: 0.3 }}
+              >
+                  <Link to={`/patients/${patient.id}`}>
+                      <Card className="p-4 group hover:border-blue-100 transition-all border-slate-50/50">
+                          <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-4">
+                                  <div className="w-14 h-14 bg-slate-50 border border-slate-100 rounded-[1.25rem] flex items-center justify-center text-slate-800 font-black text-xl group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-500 transition-all duration-300">
+                                      {patient.name?.[0] || 'P'}
+                                  </div>
+                                  <div className="space-y-1">
+                                      <h3 className="font-bold text-slate-900 group-hover:text-blue-700 transition-colors tracking-tight text-base leading-tight">{patient.name || 'Unknown'}</h3>
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                          <div className="flex items-center gap-1 text-slate-400">
+                                              <Phone size={10} />
+                                              <p className="text-[9px] font-bold uppercase tracking-widest">{patient.phone || 'N/A'}</p>
+                                          </div>
+                                          <div className="w-1 h-1 rounded-full bg-slate-200 ml-1" />
+                                          <p className="text-[9px] font-black text-blue-500/80 uppercase tracking-widest ml-1">{patient.age ? `${patient.age}Y` : 'N/A'} • {patient.gender?.[0] || 'U'}</p>
+                                      </div>
+                                  </div>
+                              </div>
+                              
+                              <div className="flex items-center gap-3">
+                                  <div className="hidden sm:block text-right">
+                                     <Badge variant={patient?.status === 'Completed' ? 'success' : patient?.status === 'Inactive' ? 'neutral' : 'info'}>
+                                        {patient?.status || 'Active'}
+                                     </Badge>
+                                  </div>
+                                  <div className="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center group-hover:bg-blue-50 group-hover:scale-105 transition-all">
+                                      <ChevronRight size={18} className="text-slate-300 group-hover:text-blue-600 transition-colors" />
+                                  </div>
+                              </div>
+                          </div>
+                      </Card>
+                  </Link>
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
       )}
     </div>
   );
 };
+

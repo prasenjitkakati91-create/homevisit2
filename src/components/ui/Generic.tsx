@@ -3,7 +3,7 @@ import { cn } from '../../utils/helpers';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'icon';
   loading?: boolean;
 }
 
@@ -17,24 +17,25 @@ export const Button: React.FC<ButtonProps> = ({
   ...props 
 }) => {
   const variants = {
-    primary: 'bg-slate-900 text-white hover:bg-slate-800 active:bg-slate-950 shadow-md shadow-slate-200/50 dark:shadow-none',
-    secondary: 'bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 shadow-md shadow-blue-100',
+    primary: 'bg-slate-900 text-white hover:bg-slate-800 active:bg-slate-950 shadow-[0_10px_20px_-10px_rgba(15,23,42,0.3)]',
+    secondary: 'bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 shadow-[0_10px_20px_-10px_rgba(37,99,235,0.4)]',
     outline: 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300',
     ghost: 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
     danger: 'bg-red-50 text-red-600 hover:bg-red-600 hover:text-white border border-red-100 transition-colors',
   };
 
   const sizes = {
-    sm: 'px-3.5 py-2 text-[11px] uppercase tracking-wider',
-    md: 'px-6 py-3 text-sm',
-    lg: 'px-8 py-4 text-base',
+    sm: 'px-4 py-2 text-[11px] uppercase tracking-wider',
+    md: 'px-6 py-3.5 text-sm',
+    lg: 'px-8 py-5 text-base',
+    icon: 'p-3',
   };
 
   return (
     <button
       disabled={disabled || loading}
       className={cn(
-        'inline-flex items-center justify-center font-bold rounded-2xl transition-all active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 cursor-pointer',
+        'inline-flex items-center justify-center font-bold rounded-[1.25rem] transition-all active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 cursor-pointer',
         variants[variant],
         sizes[size],
         className
@@ -53,8 +54,21 @@ export const Card: React.FC<{ children: React.ReactNode; className?: string; onC
   <div 
     onClick={onClick}
     className={cn(
-      'bg-white border border-slate-200/60 rounded-[2rem] p-6 shadow-sm medical-shadow',
-      onClick && 'cursor-pointer hover:border-blue-300 hover:shadow-md transition-all active:scale-[0.99]',
+      'bg-white border border-slate-100 rounded-[2.5rem] p-6 premium-shadow',
+      onClick && 'cursor-pointer hover:premium-shadow-hover hover:border-blue-200/50 transition-all active:scale-[0.99]',
+      className
+    )}
+  >
+    {children}
+  </div>
+);
+
+export const GlassCard: React.FC<{ children: React.ReactNode; className?: string; onClick?: () => void }> = ({ children, className, onClick }) => (
+  <div 
+    onClick={onClick}
+    className={cn(
+      'bg-white/60 backdrop-blur-xl border border-white/40 rounded-[2.5rem] p-6 shadow-[0_8px_32px_rgba(15,23,42,0.05)]',
+      onClick && 'cursor-pointer hover:bg-white/80 transition-all active:scale-[0.99]',
       className
     )}
   >
@@ -64,13 +78,13 @@ export const Card: React.FC<{ children: React.ReactNode; className?: string; onC
 
 export const Badge: React.FC<{ children: React.ReactNode; variant?: 'success' | 'warning' | 'info' | 'neutral'; className?: string }> = ({ children, variant = 'neutral', className }) => {
   const variants = {
-    success: 'bg-emerald-50 text-emerald-700 border-emerald-100',
-    warning: 'bg-amber-50 text-amber-700 border-amber-100',
-    info: 'bg-blue-50 text-blue-700 border-blue-100',
-    neutral: 'bg-slate-50 text-slate-600 border-slate-100',
+    success: 'bg-emerald-50 text-emerald-600 border-emerald-100/50',
+    warning: 'bg-amber-50 text-amber-600 border-amber-100/50',
+    info: 'bg-blue-50 text-blue-600 border-blue-100/50',
+    neutral: 'bg-slate-100/80 text-slate-500 border-slate-200/50',
   };
   return (
-    <span className={cn('px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest border', variants[variant], className)}>
+    <span className={cn('px-3.5 py-1 rounded-xl text-[10px] font-bold uppercase tracking-wider border', variants[variant], className)}>
       {children}
     </span>
   );
@@ -78,10 +92,10 @@ export const Badge: React.FC<{ children: React.ReactNode; variant?: 'success' | 
 
 export const Input: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { label?: string }> = ({ label, className, ...props }) => (
   <div className="space-y-2 w-full">
-    {label && <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em] ml-1">{label}</label>}
+    {label && <label className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.1em] ml-2">{label}</label>}
     <input
       className={cn(
-        'w-full px-5 py-3.5 bg-slate-50/50 border border-slate-200 rounded-2xl outline-hidden focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-medium placeholder:text-slate-300',
+        'w-full px-5 py-4 bg-white border border-slate-100 rounded-2xl shadow-sm outline-hidden focus:border-blue-400 focus:ring-4 focus:ring-blue-400/5 transition-all text-sm font-medium placeholder:text-slate-300',
         className
       )}
       {...props}
@@ -91,19 +105,19 @@ export const Input: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { lab
 
 export const Select: React.FC<React.SelectHTMLAttributes<HTMLSelectElement> & { label?: string; options: { label: string; value: string }[] }> = ({ label, options, className, ...props }) => (
   <div className="space-y-2 w-full">
-    {label && <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em] ml-1">{label}</label>}
+    {label && <label className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.1em] ml-2">{label}</label>}
     <div className="relative">
       <select
         className={cn(
-          'w-full px-5 py-3.5 bg-slate-50/50 border border-slate-200 rounded-2xl outline-hidden focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-medium appearance-none',
+          'w-full px-5 py-4 bg-white border border-slate-100 rounded-2xl shadow-sm outline-hidden focus:border-blue-400 focus:ring-4 focus:ring-blue-400/5 transition-all text-sm font-medium appearance-none',
           className
         )}
         {...props}
       >
         {options.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
       </select>
-      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+      <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
       </div>
     </div>
   </div>
@@ -111,13 +125,14 @@ export const Select: React.FC<React.SelectHTMLAttributes<HTMLSelectElement> & { 
 
 export const Textarea: React.FC<React.TextareaHTMLAttributes<HTMLTextAreaElement> & { label?: string }> = ({ label, className, ...props }) => (
   <div className="space-y-2 w-full">
-    {label && <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em] ml-1">{label}</label>}
+    {label && <label className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.1em] ml-2">{label}</label>}
     <textarea
       className={cn(
-        'w-full px-5 py-3.5 bg-slate-50/50 border border-slate-200 rounded-2xl outline-hidden focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-medium min-h-[120px] placeholder:text-slate-300',
+        'w-full px-5 py-4 bg-white border border-slate-100 rounded-2xl shadow-sm outline-hidden focus:border-blue-400 focus:ring-4 focus:ring-blue-400/5 transition-all text-sm font-medium min-h-[140px] placeholder:text-slate-300',
         className
       )}
       {...props}
     />
   </div>
 );
+

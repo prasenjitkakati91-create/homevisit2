@@ -219,6 +219,22 @@ export const sessionService = {
     }
   },
 
+  async getAllSessions() {
+    try {
+      const q = query(
+        collectionGroup(db, 'sessions'),
+        where('physioId', '==', FIXED_PHYSIO_ID)
+      );
+      const snapshot = await getDocs(q);
+      return snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() } as any))
+        .sort((a, b) => b.date.localeCompare(a.date));
+    } catch (e) {
+      console.error(e);
+      return [];
+    }
+  },
+
   async getTodayVisits() {
     try {
       const q = query(
@@ -287,6 +303,9 @@ export const sessionService = {
       let todaySessionsCount = 0;
       
       const today = new Date().toISOString().split('T')[0];
+      const currentMonth = today.substring(0, 7); // YYYY-MM
+
+      let monthlySessionsCount = 0;
 
       sessionsSnapshot.docs.forEach(doc => {
         const data = doc.data();
@@ -297,6 +316,9 @@ export const sessionService = {
         if (data.date === today) {
           todaySessionsCount++;
         }
+        if (data.date && data.date.startsWith(currentMonth)) {
+          monthlySessionsCount++;
+        }
       });
 
       return {
@@ -304,11 +326,12 @@ export const sessionService = {
         activePatients,
         pendingPayments,
         monthlyEarnings: totalEarnings,
-        totalSessions: sessionsSnapshot.size
+        totalSessions: sessionsSnapshot.size,
+        monthlySessions: monthlySessionsCount
       };
     } catch (e) {
       console.error(e);
-      return { todaySessions: 0, activePatients: 0, pendingPayments: 0, monthlyEarnings: 0, totalSessions: 0 };
+      return { todaySessions: 0, activePatients: 0, pendingPayments: 0, monthlyEarnings: 0, totalSessions: 0, monthlySessions: 0 };
     }
   }
 };

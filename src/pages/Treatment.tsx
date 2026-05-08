@@ -20,9 +20,11 @@ import {
   Image as ImageIcon,
   ExternalLink,
   User,
-  Activity
+  Activity,
+  CreditCard,
+  Wallet
 } from 'lucide-react';
-import { Badge, Card, Button, Input, Textarea, Select } from '../components/ui/Generic';
+import { Badge, Card, Button, Input, Textarea, Select, GlassCard } from '../components/ui/Generic';
 import { patientService, caseService, sessionService } from '../services/db';
 import { FileUpload } from '../components/ui/FileUpload';
 import { formatDate, formatCurrency, cn } from '../utils/helpers';
@@ -86,35 +88,35 @@ export const EditSession = () => {
   
     if (fetching) return (
         <div className="p-10 space-y-6">
-            <div className="h-10 w-24 bg-slate-200 animate-pulse rounded-xl" />
-            <div className="h-64 bg-white border border-slate-100 rounded-[2.5rem] animate-pulse" />
+            <div className="h-10 w-24 bg-slate-100 animate-pulse rounded-2xl" />
+            <div className="h-64 bg-white border border-slate-50 rounded-[2.5rem] animate-pulse" />
         </div>
     );
 
     return (
-      <div className="space-y-8 pb-20">
-        <div className="flex items-center gap-4 px-1">
-          <button onClick={() => navigate(-1)} className="p-2.5 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-slate-900 transition-all medical-shadow active:scale-90">
-            <ArrowLeft size={20} />
+      <div className="space-y-8 pb-10">
+        <div className="flex items-center gap-4 px-2">
+          <button onClick={() => navigate(-1)} className="p-3 bg-white border border-slate-100 rounded-2xl text-slate-400 hover:text-slate-900 transition-all shadow-sm active:scale-90">
+            <ArrowLeft size={20} strokeWidth={2.5} />
           </button>
           <div className="space-y-0.5">
-            <p className="text-[10px] font-extrabold text-blue-600 uppercase tracking-[0.2em]">Therapeutic Module</p>
-            <h1 className="text-2xl font-extrabold text-slate-950 tracking-tight font-display italic">Edit <span className="not-italic text-blue-600">Session</span></h1>
+            <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest leading-none">Diagnostic Update</p>
+            <h1 className="text-xl font-black text-slate-950 tracking-tight leading-none italic">Edit <span className="not-italic">Protocol</span></h1>
           </div>
         </div>
   
-        <form onSubmit={handleSubmit} className="space-y-6 px-1 animate-in fade-in slide-in-from-bottom-4 duration-500">
-           <Card className="p-8 space-y-6 border-slate-200 shadow-xl shadow-slate-100 bg-white">
+        <form onSubmit={handleSubmit} className="space-y-6 px-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
+           <Card className="p-8 space-y-6">
             <div className="grid grid-cols-2 gap-4">
                 <Input
-                label="Session Date"
+                label="Protocol date"
                 type="date"
                 value={formData.date}
                 onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                 required
                 />
                 <Select
-                label="Pain Response"
+                label="Pain response"
                 options={Array.from({length: 11}, (_, i) => ({ label: `${i}/10 Scale`, value: `${i}` }))}
                 value={formData.painScore}
                 onChange={(e) => setFormData({ ...formData, painScore: e.target.value })}
@@ -122,7 +124,7 @@ export const EditSession = () => {
             </div>
             
             <Textarea
-                label="Therapeutic Protocol"
+                label="Intervention matrix"
                 placeholder="Describe interventions..."
                 value={formData.treatmentDone}
                 onChange={(e) => setFormData({ ...formData, treatmentDone: e.target.value })}
@@ -131,7 +133,7 @@ export const EditSession = () => {
 
             <div className="grid grid-cols-2 gap-4">
                 <Select
-                label="Billing Status"
+                label="Ledger status"
                 options={[
                     { label: 'Paid', value: 'Paid' },
                     { label: 'Pending', value: 'Pending' },
@@ -140,7 +142,7 @@ export const EditSession = () => {
                 onChange={(e) => setFormData({ ...formData, paymentStatus: e.target.value })}
                 />
                 <Input
-                label="Amount (₹)"
+                label="Unit value (₹)"
                 type="number"
                 value={formData.amountPaid}
                 onChange={(e) => setFormData({ ...formData, amountPaid: e.target.value })}
@@ -148,15 +150,15 @@ export const EditSession = () => {
             </div>
 
             <Input
-                label="Follow-up Date"
+                label="Next protocol sync"
                 type="date"
                 value={formData.nextVisitDate}
                 onChange={(e) => setFormData({ ...formData, nextVisitDate: e.target.value })}
             />
           </Card>
 
-          <Button type="submit" className="w-full py-6 rounded-[1.5rem]" loading={loading}>
-            Save Session Metrics
+          <Button type="submit" variant="primary" className="w-full py-6 rounded-[2rem]" loading={loading}>
+            Synchronize Metrics
           </Button>
         </form>
       </div>
@@ -199,42 +201,29 @@ export const PatientDetail = () => {
     }
   };
 
-  const handleUpdateStatus = async (status: string) => {
-    try {
-      await patientService.updatePatientStatus(patientId!, status);
-      setPatient({ ...patient, status });
-      toast.success(`Status updated to ${status}`);
-    } catch (err) {
-      toast.error('Failed to update status');
-    }
-  };
-
   const isCompleted = patient?.status === 'Completed';
 
   if (loading) return (
-    <div className="p-10 space-y-6">
-        <div className="h-10 w-48 bg-slate-200 animate-pulse rounded-xl" />
-        <div className="grid grid-cols-1 gap-4">
-            <div className="h-44 bg-slate-900 rounded-[2.5rem] animate-pulse" />
-            <div className="h-64 bg-white rounded-[2.5rem] animate-pulse" />
+    <div className="p-8 space-y-6">
+        <div className="h-10 w-32 bg-slate-100 animate-pulse rounded-2xl" />
+        <div className="space-y-4">
+            <div className="h-48 bg-slate-900 rounded-[3rem] animate-pulse" />
+            <div className="h-64 bg-white rounded-[3rem] animate-pulse" />
         </div>
     </div>
   );
-  if (!patient) return <div className="p-10 text-center">Patient not found</div>;
+  if (!patient) return <div className="p-10 text-center text-slate-500 font-bold">Record not found</div>;
 
   return (
-    <div className="space-y-10 pb-24 animate-in fade-in slide-in-from-bottom-4 duration-500 px-1">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8 pb-10">
+      <div className="flex items-center justify-between px-2">
         <div className="flex items-center gap-4">
-          <button onClick={() => navigate('/patients')} className="p-3 bg-white border border-slate-200 rounded-[1rem] text-slate-500 hover:text-slate-900 hover:border-slate-300 hover:shadow-lg hover:shadow-slate-200/50 transition-all active:scale-95 group">
-            <ArrowLeft size={18} strokeWidth={2.5} className="group-hover:-translate-x-0.5 transition-transform" />
+          <button onClick={() => navigate('/patients')} className="p-3 bg-white border border-slate-100 rounded-2xl text-slate-400 hover:text-slate-900 transition-all shadow-sm active:scale-90">
+            <ArrowLeft size={20} strokeWidth={2.5} />
           </button>
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-pulse shadow-[0_0_8px_rgba(37,99,235,0.8)]" />
-                <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] leading-none mt-0.5">Profile Index</p>
-            </div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight leading-none">Clinical Context</h1>
+          <div className="space-y-0.5">
+            <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest leading-none">Record Index</p>
+            <h1 className="text-xl font-black text-slate-950 tracking-tight leading-none italic">Clinical <span className="not-italic">Context</span></h1>
           </div>
         </div>
         <div className="flex gap-2">
@@ -242,88 +231,80 @@ export const PatientDetail = () => {
                 <>
                     <button 
                         onClick={() => navigate(`/patients/${patientId}/edit`)} 
-                        className="p-3 bg-white border border-slate-200 text-slate-500 hover:text-blue-600 hover:bg-blue-50/50 hover:border-blue-200 rounded-[1rem] transition-all active:scale-95 hover:shadow-lg hover:shadow-blue-500/10"
+                        className="p-3 bg-white border border-slate-100 text-slate-400 hover:text-blue-600 rounded-2xl transition-all shadow-sm active:scale-95"
                     >
-                        <Edit2 size={16} strokeWidth={2.5} />
+                        <Edit2 size={18} strokeWidth={2.5} />
                     </button>
                     <button 
                         onClick={handleDeletePatient} 
-                        className="p-3 bg-white border border-slate-200 text-slate-500 hover:text-red-600 hover:bg-red-50/50 hover:border-red-200 rounded-[1rem] transition-all active:scale-95 hover:shadow-lg hover:shadow-red-500/10"
+                        className="p-3 bg-white border border-slate-100 text-slate-400 hover:text-red-600 rounded-2xl transition-all shadow-sm active:scale-95"
                     >
-                        <Trash2 size={16} strokeWidth={2.5} />
+                        <Trash2 size={18} strokeWidth={2.5} />
                     </button>
                 </>
             )}
         </div>
       </div>
 
-      {/* Profile Locked Indicator */}
-      {isCompleted && (
-        <motion.div 
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mx-1 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center justify-center gap-2 text-emerald-600 text-[10px] font-black uppercase tracking-[0.2em]"
-        >
-            <CheckCircle2 size={16} /> Clinical Protocol Concluded - Read Only Archive
-        </motion.div>
-      )}
+      {/* Patient Profile Widget - Dark UI for Premium feel */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="px-2"
+      >
+        <div className="relative p-7 rounded-[3rem] bg-slate-900 text-white overflow-hidden shadow-2xl shadow-slate-200">
+           <div className="relative z-10 flex flex-col gap-6">
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                   <div className="w-16 h-16 bg-white/10 rounded-3xl backdrop-blur-md border border-white/10 flex items-center justify-center font-black text-2xl text-white">
+                      {patient.name?.[0] || 'P'}
+                   </div>
+                   <div className="space-y-1">
+                      <h2 className="text-3xl font-black font-display tracking-tight leading-none italic">{patient.name}</h2>
+                      <div className="flex gap-2">
+                         <Badge className="bg-white/5 text-white/60 border-white/5 text-[9px] uppercase tracking-widest leading-none py-1.5">{patient.gender}</Badge>
+                         <Badge className="bg-white/5 text-white/60 border-white/5 text-[9px] uppercase tracking-widest leading-none py-1.5">{patient.age}Y</Badge>
+                      </div>
+                   </div>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                 <a href={`tel:${patient.phone}`} className="flex items-center gap-3 p-4 bg-white/5 border border-white/5 rounded-2xl hover:bg-white/10 transition-all">
+                    <div className="p-2 bg-blue-500/20 text-blue-400 rounded-xl">
+                       <Phone size={16} strokeWidth={2.5} />
+                    </div>
+                    <div className="space-y-0.5 min-w-0">
+                       <p className="text-[8px] font-black text-white/30 uppercase tracking-widest leading-none">Contact</p>
+                       <p className="text-xs font-bold text-white/90 truncate">{patient.phone}</p>
+                    </div>
+                 </a>
+                 <div className="flex items-center gap-3 p-4 bg-white/5 border border-white/5 rounded-2xl">
+                    <div className="p-2 bg-indigo-500/20 text-indigo-400 rounded-xl">
+                       <MapPin size={16} strokeWidth={2.5} />
+                    </div>
+                    <div className="space-y-0.5 min-w-0">
+                       <p className="text-[8px] font-black text-white/30 uppercase tracking-widest leading-none">Location</p>
+                       <p className="text-xs font-bold text-white/90 truncate">{patient.address}</p>
+                    </div>
+                 </div>
+              </div>
+           </div>
 
-      {/* Patient Profile Card */}
-      <Card className="bg-slate-900 border-white/10 p-7 sm:p-10 rounded-[2rem] sm:rounded-[2.5rem] relative overflow-hidden shadow-2xl shadow-blue-900/10 group">
-         <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 z-0" />
-         
-         {/* Abstract background intelligence */}
-         <div className="absolute -top-32 -right-32 w-96 h-96 bg-blue-500/20 rounded-full blur-[100px] z-0 group-hover:bg-blue-500/30 transition-colors duration-700" />
-         <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-indigo-500/10 rounded-full blur-[80px] z-0" />
-         
-         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6 mb-10 relative z-10">
-          <div className="space-y-4">
-            <h2 className="text-4xl sm:text-5xl font-black text-white tracking-tight leading-none drop-shadow-md">{patient.name}</h2>
-            <div className="flex flex-wrap items-center gap-3">
-                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/20 border border-blue-400/30 text-blue-200 rounded-xl backdrop-blur-md shadow-sm">
-                    <User size={12} strokeWidth={3} />
-                    <span className="text-[10px] font-black uppercase tracking-[0.15em] leading-none mt-0.5">{patient.gender}</span>
-                </div>
-                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 border border-white/10 text-white/80 rounded-xl backdrop-blur-md shadow-sm">
-                    <span className="text-[10px] font-black uppercase tracking-[0.15em] leading-none mt-0.5">{patient.age} YRS</span>
-                </div>
-                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 border border-white/10 text-white/80 rounded-xl backdrop-blur-md shadow-sm">
-                    <div className={cn("w-1.5 h-1.5 rounded-full", isCompleted ? "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" : patient?.status === 'Inactive' ? "bg-slate-400" : "bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.8)] animate-pulse")} />
-                    <span className="text-[10px] font-black uppercase tracking-[0.15em] leading-none mt-0.5">{patient?.status || 'Active'}</span>
-                </div>
-            </div>
-          </div>
+           {/* Decorative elements */}
+           <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-blue-600/20 rounded-full blur-3xl opacity-50" />
+           <div className="absolute left-1/4 top-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl opacity-30" />
+        </div>
+      </motion.div>
+
+      {/* Diagnostic Records */}
+      <section className="space-y-4 px-2">
+        <div className="flex items-center gap-2">
+            <div className="w-1 h-3 bg-blue-600 rounded-full" />
+            <h2 className="text-xs font-black text-slate-950 uppercase tracking-widest leading-none">Digital Archive</h2>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
-          <a href={`tel:${patient.phone}`} className="flex items-center gap-4 p-4 sm:p-5 bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 rounded-[1.25rem] transition-all duration-300 group/item">
-            <div className="p-3 bg-blue-500/20 text-blue-300 rounded-[1rem] group-hover/item:scale-110 group-hover/item:bg-blue-500/30 transition-all duration-300 shadow-sm">
-                <Phone size={18} strokeWidth={2.5} />
-            </div>
-            <div className="space-y-1.5">
-                <p className="text-[9px] font-black text-white/40 uppercase tracking-[0.2em] leading-none">Tele-Connectivity</p>
-                <p className="text-sm font-mono font-bold text-white/90">{patient.phone}</p>
-            </div>
-          </a>
-          <div className="flex items-start gap-4 p-4 sm:p-5 bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 rounded-[1.25rem] transition-all duration-300 group/item">
-            <div className="p-3 bg-indigo-500/20 text-indigo-300 rounded-[1rem] group-hover/item:scale-110 group-hover/item:bg-indigo-500/30 transition-all duration-300 shadow-sm shrink-0">
-                <MapPin size={18} strokeWidth={2.5} />
-            </div>
-            <div className="space-y-1.5">
-                <p className="text-[9px] font-black text-white/40 uppercase tracking-[0.2em] leading-none">Geographic Deployment</p>
-                <p className="text-xs font-semibold text-white/80 leading-tight line-clamp-2">{patient.address}</p>
-            </div>
-          </div>
-        </div>
-      </Card>
-
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 mb-2 px-1">
-            <div className="w-2 h-2 bg-blue-500 rounded-full" />
-            <h2 className="text-xs font-bold text-slate-950 uppercase tracking-[0.15em] font-display">Diagnostic Records</h2>
-        </div>
-        
-        <Card className="p-6 bg-slate-50 border-slate-200 border-2 border-dashed shadow-none">
+        <GlassCard className="p-6 border-dashed border-slate-200">
             <FileUpload 
             path={`patients/${patientId}/reports`} 
             onUploadComplete={async (url) => {
@@ -332,161 +313,90 @@ export const PatientDetail = () => {
                 setPatient({ ...patient, reports });
             }} 
             />
-        </Card>
+        </GlassCard>
         
-        {patient.reports && patient.reports.length > 0 && (
-          <div className="grid grid-cols-1 gap-3">
-            {patient.reports.map((report: any, idx: number) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: idx * 0.05 }}
-              >
-                <Card className="p-4 flex items-center justify-between group bg-white border-slate-200/60 hover:border-blue-400 active:scale-[0.99] transition-all">
-                    <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-slate-50 text-slate-400 border border-slate-100 rounded-xl flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all medical-shadow">
-                            <FileText size={18} />
-                        </div>
-                        <div className="space-y-0.5">
-                            <span className="text-xs font-black text-slate-900 uppercase tracking-widest leading-none">Record R{idx + 1}</span>
-                            <p className="text-[10px] font-bold text-slate-400">{formatDate(report.date)}</p>
-                        </div>
-                    </div>
-                    <div className="flex gap-2">
-                        <button onClick={() => window.open(report.url, '_blank')} className="p-2.5 bg-slate-50 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all border border-slate-100">
-                            <ExternalLink size={16} />
-                        </button>
-                        <button 
-                            onClick={async () => {
-                                if (!window.confirm('Delete this report?')) return;
-                                try {
-                                    const newReports = patient.reports.filter((_: any, i: number) => i !== idx);
-                                    await patientService.updatePatient(patientId!, { reports: newReports });
-                                    setPatient({ ...patient, reports: newReports });
-                                    toast.success('Report deleted');
-                                } catch (err) {
-                                    toast.error('Failed to delete report');
-                                }
-                            }} 
-                            className="p-2.5 bg-slate-50 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all border border-slate-100"
-                        >
-                            <Trash2 size={16} />
-                        </button>
-                    </div>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-        )}
-      </div>
+        <div className="grid grid-cols-1 gap-3">
+          {patient.reports?.map((report: any, idx: number) => (
+            <motion.div key={idx} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.05 }}>
+              <Card className="p-4 group border-slate-50/50">
+                  <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 bg-slate-50 border border-slate-100/50 rounded-xl flex items-center justify-center text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                              <FileText size={18} />
+                          </div>
+                          <div className="space-y-0.5">
+                              <span className="text-[10px] font-black text-slate-950 uppercase tracking-widest leading-none">Report R{idx + 1}</span>
+                              <p className="text-[9px] font-bold text-slate-400">{formatDate(report.date)}</p>
+                          </div>
+                      </div>
+                      <div className="flex gap-2">
+                          <button onClick={() => window.open(report.url, '_blank')} className="p-2.5 bg-slate-50 text-slate-400 hover:text-blue-600 rounded-xl transition-all border border-slate-100/50">
+                              <ExternalLink size={14} />
+                          </button>
+                      </div>
+                  </div>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+      </section>
 
-      {/* Treatment Cases */}
-      <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between px-1 gap-4">
-            <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-[1rem] bg-emerald-50 text-emerald-600 border border-emerald-100 shadow-sm">
-                    <Activity size={20} strokeWidth={2.5} />
-                </div>
-                <div className="space-y-1">
-                    <h2 className="text-lg font-black text-slate-900 tracking-tight leading-none">Treatment Cycles</h2>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">{cases.length} Total Protocol{cases.length !== 1 ? 's' : ''}</p>
-                </div>
-            </div>
-        <div className="flex flex-wrap items-center gap-2">
-            {!isCompleted && (
-                <>
-                    {cases.some(c => c.status === 'Active') ? (
-                        <button 
-                        onClick={() => {
-                            const activeCase = cases.find(c => c.status === 'Active');
-                            if (activeCase) navigate(`/patients/${patientId}/cases/${activeCase.id}/sessions/add`);
-                        }}
-                        className="text-[10px] font-black text-white bg-slate-900 px-4 py-2.5 rounded-[1rem] flex items-center gap-2 hover:bg-slate-800 transition-all active:scale-95 uppercase tracking-widest shadow-lg shadow-slate-900/10 hover:shadow-slate-900/20"
-                        >
-                            <Calendar size={14} strokeWidth={2.5} /> Schedule Session
-                        </button>
-                    ) : (
-                        <button 
-                        onClick={() => toast.info('Please create an active treatment case first to schedule sessions')}
-                        className="text-[10px] font-black text-slate-400 bg-slate-100 px-4 py-2.5 rounded-[1rem] flex items-center gap-2 cursor-not-allowed uppercase tracking-widest opacity-80"
-                        >
-                            <Calendar size={14} strokeWidth={2.5} /> Schedule Session
-                        </button>
-                    )}
-                    <Link 
-                        to={`/patients/${patientId}/cases/add`}
-                        className="text-[10px] font-black text-blue-600 border-none bg-blue-50 px-4 py-2.5 rounded-[1rem] flex items-center gap-2 hover:bg-blue-600 hover:text-white transition-all active:scale-95 uppercase tracking-widest shadow-sm"
-                    >
-                        <Plus size={14} strokeWidth={2.5} /> New Case
-                    </Link>
-                </>
-            )}
-          </div>
+      {/* Treatment Protocols */}
+      <section className="space-y-4 px-2 pt-2">
+        <div className="flex items-center justify-between">
+           <div className="flex items-center gap-2">
+                <div className="w-1 h-3 bg-blue-600 rounded-full" />
+                <h2 className="text-xs font-black text-slate-950 uppercase tracking-widest leading-none">Treatment cycles</h2>
+           </div>
+           {!isCompleted && (
+              <Button size="sm" variant="ghost" className="text-[10px] font-black uppercase tracking-widest text-blue-600 p-0 hover:bg-transparent" onClick={() => navigate(`/patients/${patientId}/cases/add`)}>
+                <Plus size={14} className="mr-1" /> New Case
+              </Button>
+           )}
         </div>
 
         {cases.length === 0 ? (
-          <Card className="bg-slate-50 border-none flex flex-col items-center justify-center py-16 text-center space-y-4 border-2 border-dashed border-slate-200">
-             <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-slate-200 shadow-sm border border-slate-100">
-               <AlertCircle size={24} />
+          <GlassCard className="flex flex-col items-center justify-center py-12 text-center space-y-4 border-dashed border-slate-200">
+             <div className="w-14 h-14 bg-white/50 rounded-2xl flex items-center justify-center text-slate-200 border border-white">
+               <Activity size={26} />
              </div>
              <div className="space-y-1">
-                <p className="text-slate-900 font-bold tracking-tight">Cycle Registry Empty</p>
-                <p className="text-slate-400 text-xs font-medium uppercase tracking-wider">No active protocols identified for this patient</p>
+                <p className="text-slate-900 font-bold text-sm tracking-tight text-center">No Active Cycles</p>
+                <p className="text-slate-400 text-[10px] font-medium uppercase tracking-widest text-center">Baseline not established</p>
              </div>
-             <Button variant="outline" size="sm" onClick={() => navigate(`/patients/${patientId}/cases/add`)} className="rounded-xl mt-2 px-6">Start New Case</Button>
-          </Card>
+             <Button variant="outline" size="sm" onClick={() => navigate(`/patients/${patientId}/cases/add`)} className="rounded-xl mt-2 bg-white border-slate-200">Initialize Case</Button>
+          </GlassCard>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {cases.map((trCase) => (
               <Card 
                 key={trCase.id} 
-                className="hover:border-blue-400 cursor-pointer group bg-white border-slate-200/60 p-6 rounded-[2rem] hover:translate-y-[-2px] transition-all"
+                className="p-5 group hover:border-blue-100 transition-all border-slate-50/50"
                 onClick={() => navigate(`/patients/${patientId}/cases/${trCase.id}`)}
               >
-                <div className="flex items-start justify-between mb-6">
+                <div className="flex items-start justify-between">
                   <div className="space-y-3">
+                    <h3 className="font-bold text-slate-950 group-hover:text-blue-600 transition-colors leading-tight tracking-tight text-base italic">{trCase.diagnosis}</h3>
                     <div className="flex items-center gap-2">
                       <Badge variant={trCase.status === 'Active' ? 'success' : 'neutral'}>
                         {trCase.status}
                       </Badge>
-                      <Badge variant="info" className="bg-slate-100 text-slate-500 border-none">{trCase.condition}</Badge>
-                    </div>
-                    <h3 className="font-extrabold text-slate-900 text-xl group-hover:text-blue-600 transition-colors leading-tight tracking-tight">{trCase.diagnosis}</h3>
-                  </div>
-                  <div className="p-3 bg-slate-50 rounded-2xl group-hover:bg-blue-600 group-hover:text-white transition-all medical-shadow">
-                    <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform" />
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4 border-t border-slate-50 pt-6">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-slate-50 rounded-lg text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500">
-                        <Calendar size={14} />
-                    </div>
-                    <div className="space-y-0.5">
-                        <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest leading-none">Deployment</p>
-                        <p className="text-[11px] font-mono font-bold text-slate-600">{formatDate(trCase.startDate)}</p>
+                      <Badge variant="info" className="bg-slate-100 text-slate-400 border-none">{trCase.condition}</Badge>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 justify-end">
-                    <div className="text-right space-y-0.5">
-                        <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest leading-none">Intensity</p>
-                        <p className="text-[11px] font-mono font-bold text-slate-600">{trCase.expectedSessions} Modules</p>
-                    </div>
-                    <div className="p-2 bg-slate-50 rounded-lg text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500">
-                        <Clock size={14} />
-                    </div>
+                  <div className="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center group-hover:bg-blue-50 group-hover:scale-105 transition-all">
+                    <ChevronRight size={18} className="text-slate-300 group-hover:text-blue-600" />
                   </div>
                 </div>
               </Card>
             ))}
           </div>
         )}
-      </div>
+      </section>
     </div>
   );
 };
+
 
 export const CaseAdd = () => {
     const { patientId } = useParams();
@@ -521,28 +431,28 @@ export const CaseAdd = () => {
     };
   
     return (
-      <div className="space-y-8 pb-20">
-        <div className="flex items-center gap-4 px-1">
-          <button onClick={() => navigate(-1)} className="p-2.5 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-slate-900 transition-all medical-shadow active:scale-90">
-            <ArrowLeft size={20} />
+      <div className="space-y-8 pb-10">
+        <div className="flex items-center gap-4 px-2">
+          <button onClick={() => navigate(-1)} className="p-3 bg-white border border-slate-100 rounded-2xl text-slate-400 hover:text-slate-900 transition-all shadow-sm active:scale-90">
+            <ArrowLeft size={20} strokeWidth={2.5} />
           </button>
           <div className="space-y-0.5">
-            <p className="text-[10px] font-extrabold text-blue-600 uppercase tracking-[0.2em]">Initialization</p>
-            <h1 className="text-2xl font-extrabold text-slate-950 tracking-tight font-display italic">New Case <span className="not-italic text-blue-600">Protocol</span></h1>
+            <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest leading-none">Initialization</p>
+            <h1 className="text-xl font-black text-slate-950 tracking-tight leading-none italic">New Case <span className="not-italic">Protocol</span></h1>
           </div>
         </div>
   
-        <form onSubmit={handleSubmit} className="space-y-6 px-1 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <Card className="p-8 space-y-6 border-slate-200 shadow-xl shadow-slate-100 bg-white">
+        <form onSubmit={handleSubmit} className="space-y-6 px-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <Card className="p-8 space-y-6">
             <Input
-                label="Primary Diagnosis"
+                label="Primary diagnosis"
                 placeholder="e.g. Cervical Spondylosis / Post-Op ACL"
                 value={formData.diagnosis}
                 onChange={(e) => setFormData({ ...formData, diagnosis: e.target.value })}
                 required
             />
             <Select
-                label="Clinical Classification"
+                label="Clinical classification"
                 options={[
                 { label: 'Orthopedic Support', value: 'Orthopedic' },
                 { label: 'Neurological Rehab', value: 'Neurological' },
@@ -555,14 +465,14 @@ export const CaseAdd = () => {
             />
             <div className="grid grid-cols-2 gap-4">
                 <Input
-                label="Protocol Commencement"
+                label="Commencement date"
                 type="date"
                 value={formData.startDate}
                 onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                 required
                 />
                 <Input
-                label="Valuation Unit (₹)"
+                label="Valuation unit (₹)"
                 type="number"
                 value={formData.sessionFee}
                 onChange={(e) => setFormData({ ...formData, sessionFee: e.target.value })}
@@ -570,20 +480,20 @@ export const CaseAdd = () => {
                 />
             </div>
             <Input
-                label="Targeted Modules (Count)"
+                label="Targeted modules"
                 type="number"
                 value={formData.expectedSessions}
                 onChange={(e) => setFormData({ ...formData, expectedSessions: e.target.value })}
             />
             <Textarea
-                label="Clinical Assessment Baseline"
+                label="Assessment baseline"
                 placeholder="Initial range of motion, functional limitations..."
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
             />
           </Card>
 
-          <Button type="submit" className="w-full py-6 rounded-[1.5rem]" loading={loading}>
+          <Button type="submit" variant="primary" className="w-full py-6 rounded-[2rem]" loading={loading}>
             Deploy Treatment Case
           </Button>
         </form>
@@ -623,15 +533,15 @@ export const CaseDetail = () => {
     }, [patientId, caseId]);
   
     if (loading) return (
-        <div className="p-10 space-y-6">
-            <div className="h-10 w-48 bg-slate-200 animate-pulse rounded-xl" />
+        <div className="p-8 space-y-6">
+            <div className="h-10 w-48 bg-slate-100 animate-pulse rounded-2xl" />
             <div className="grid grid-cols-2 gap-4">
-                <div className="h-24 bg-blue-600 rounded-3xl animate-pulse" />
-                <div className="h-24 bg-slate-900 rounded-3xl animate-pulse" />
+                <div className="h-40 bg-slate-900 rounded-[2.5rem] animate-pulse" />
+                <div className="h-40 bg-slate-100 rounded-[2.5rem] animate-pulse" />
             </div>
         </div>
     );
-    if (!trCase) return <div className="p-10 text-center">Case not found</div>;
+    if (!trCase) return <div className="p-10 text-center text-slate-500 font-bold">Case record not found</div>;
   
     const totalEarnings = sessions.reduce((acc, s) => acc + (s.amountPaid || 0), 0);
     const pendingEarnings = sessions.filter(s => s.paymentStatus === 'Pending').reduce((acc, s) => acc + (trCase.sessionFee || 500), 0);
@@ -680,36 +590,27 @@ export const CaseDetail = () => {
     const isCompleted = patient?.status === 'Completed';
 
     return (
-      <div className="space-y-10 pb-32 animate-in fade-in slide-in-from-bottom-4 duration-500 px-1">
-        <div className="flex items-center justify-between">
+      <div className="space-y-8 pb-10">
+        <div className="flex items-center justify-between px-2">
             <div className="flex items-center gap-4">
-                <button onClick={() => navigate(`/patients/${patientId}`)} className="p-3 bg-white border border-slate-200 rounded-[1rem] text-slate-500 hover:text-slate-900 hover:border-slate-300 hover:shadow-lg hover:shadow-slate-200/50 transition-all active:scale-95 group">
-                    <ArrowLeft size={18} strokeWidth={2.5} className="group-hover:-translate-x-0.5 transition-transform" />
+                <button onClick={() => navigate(`/patients/${patientId}`)} className="p-3 bg-white border border-slate-100 rounded-2xl text-slate-400 hover:text-slate-900 transition-all shadow-sm active:scale-90">
+                    <ArrowLeft size={20} strokeWidth={2.5} />
                 </button>
-                <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(99,102,241,0.8)]" />
-                        <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em] leading-none mt-0.5">Clinic Archive</p>
-                    </div>
-                    <h1 className="text-2xl font-black text-slate-900 tracking-tight leading-none">{trCase.diagnosis}</h1>
+                <div className="space-y-0.5">
+                    <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest leading-none">Therapeutic Ledger</p>
+                    <h1 className="text-xl font-black text-slate-900 tracking-tight leading-none italic">{trCase.diagnosis}</h1>
                 </div>
             </div>
             {!isCompleted && (
-                trCase.status === 'Active' ? (
-                    <button 
-                      onClick={() => handleUpdateStatus('Completed')} 
-                      className="px-4 py-2.5 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-[1rem] text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 hover:text-white transition-all active:scale-95 shadow-sm"
-                    >
-                        Conclude
-                    </button>
-                ) : (
-                    <button 
-                      onClick={() => handleUpdateStatus('Active')} 
-                      className="px-4 py-2.5 bg-blue-50 text-blue-600 border border-blue-100 rounded-[1rem] text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all active:scale-95 shadow-sm"
-                    >
-                        Re-Deploy
-                    </button>
-                )
+                <button 
+                  onClick={() => handleUpdateStatus(trCase.status === 'Active' ? 'Completed' : 'Active')} 
+                  className={cn(
+                    "p-3 rounded-2xl transition-all shadow-sm active:scale-95",
+                    trCase.status === 'Active' ? "bg-emerald-50 text-emerald-600 border border-emerald-100" : "bg-blue-50 text-blue-600 border border-blue-100"
+                  )}
+                >
+                    <CheckCircle2 size={18} strokeWidth={2.5} />
+                </button>
             )}
         </div>
   
@@ -964,22 +865,22 @@ export const SessionAdd = () => {
     };
   
     return (
-      <div className="space-y-8 pb-20">
-        <div className="flex items-center gap-4 px-1">
-          <button onClick={() => navigate(-1)} className="p-2.5 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-slate-900 transition-all medical-shadow active:scale-90">
-            <ArrowLeft size={20} />
+      <div className="space-y-8 pb-10">
+        <div className="flex items-center gap-4 px-2">
+          <button onClick={() => navigate(-1)} className="p-3 bg-white border border-slate-100 rounded-2xl text-slate-400 hover:text-slate-900 transition-all shadow-sm active:scale-90">
+            <ArrowLeft size={20} strokeWidth={2.5} />
           </button>
           <div className="space-y-0.5">
-            <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em]">Deployment</p>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tighter">Module Initialization</h1>
+            <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest leading-none">Deployment</p>
+            <h1 className="text-xl font-black text-slate-950 tracking-tight leading-none italic">New <span className="not-italic">Protocol</span></h1>
           </div>
         </div>
   
         {/* Templates */}
-        <div className="space-y-4 px-1">
+        <div className="space-y-4 px-2">
             <div className="flex items-center gap-2">
                 <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
-                <p className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Protocol Templates</p>
+                <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest leading-none">Protocol Templates</p>
             </div>
             <div className="flex gap-3 overflow-x-auto pb-4 no-scrollbar -mx-1 px-1">
                 {['Cervical', 'Lumbar', 'Stroke', 'ACL', 'Knee OA'].map(t => (
@@ -987,7 +888,7 @@ export const SessionAdd = () => {
                         key={t}
                         whileTap={{ scale: 0.95 }}
                         onClick={() => applyTemplate(t)}
-                        className="whitespace-nowrap px-6 py-3 bg-white border border-slate-200 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-blue-600 hover:border-blue-400 transition-all medical-shadow active:bg-blue-50"
+                        className="whitespace-nowrap px-6 py-3 bg-white border border-slate-100 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-blue-600 hover:border-blue-100 transition-all active:bg-blue-50"
                     >
                         {t}
                     </motion.button>
@@ -995,18 +896,18 @@ export const SessionAdd = () => {
             </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6 px-1 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <Card className="p-8 space-y-6 border-slate-200 shadow-xl shadow-slate-100 bg-white">
+        <form onSubmit={handleSubmit} className="space-y-6 px-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <Card className="p-8 space-y-6">
             <div className="grid grid-cols-2 gap-4">
                 <Input
-                label="Module Date"
+                label="Module date"
                 type="date"
                 value={formData.date}
                 onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                 required
                 />
                 <Select
-                label="Pain Response"
+                label="Pain response"
                 options={Array.from({length: 11}, (_, i) => ({ label: `${i}/10 Scale`, value: `${i}` }))}
                 value={formData.painScore}
                 onChange={(e) => setFormData({ ...formData, painScore: e.target.value })}
@@ -1014,7 +915,7 @@ export const SessionAdd = () => {
             </div>
             
             <Textarea
-                label="Therapeutic Protocol"
+                label="Intervention matrix"
                 placeholder="What interventions were prioritized?"
                 value={formData.treatmentDone}
                 onChange={(e) => setFormData({ ...formData, treatmentDone: e.target.value })}
@@ -1023,7 +924,7 @@ export const SessionAdd = () => {
 
             <div className="grid grid-cols-2 gap-4">
                 <Select
-                label="Billing Status"
+                label="Ledger status"
                 options={[
                     { label: 'Paid', value: 'Paid' },
                     { label: 'Pending', value: 'Pending' },
@@ -1032,7 +933,7 @@ export const SessionAdd = () => {
                 onChange={(e) => setFormData({ ...formData, paymentStatus: e.target.value })}
                 />
                 <Input
-                label="Amount (₹)"
+                label="Unit value (₹)"
                 type="number"
                 value={formData.amountPaid}
                 onChange={(e) => setFormData({ ...formData, amountPaid: e.target.value })}
@@ -1040,14 +941,14 @@ export const SessionAdd = () => {
             </div>
 
             <Input
-                label="Next Protocol Date"
+                label="Next protocol sync"
                 type="date"
                 value={formData.nextVisitDate}
                 onChange={(e) => setFormData({ ...formData, nextVisitDate: e.target.value })}
             />
           </Card>
 
-          <Button type="submit" className="w-full py-6 rounded-[1.5rem]" loading={loading}>
+          <Button type="submit" variant="primary" className="w-full py-6 rounded-[2rem]" loading={loading}>
             Deploy Module Entry
           </Button>
         </form>
