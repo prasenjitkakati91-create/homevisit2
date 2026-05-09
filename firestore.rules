@@ -12,31 +12,27 @@ service cloud.firestore {
     }
 
     match /patients/{patientId} {
-      allow read, list: if isSignedIn();
-      allow write: if isSignedIn();
+      allow read, list, write: if true;
 
       match /cases/{caseId} {
-        allow read, list: if isSignedIn();
-        allow write: if isSignedIn();
+        allow read, list, write: if true;
 
         match /sessions/{sessionId} {
-          allow read, list: if isSignedIn();
-          allow write: if isSignedIn();
+          allow read, list, write: if true;
         }
       }
 
       match /files/{fileId} {
-        allow read, list: if isSignedIn();
-        allow write: if isSignedIn();
+        allow read, list, write: if true;
       }
     }
 
     // Collection Group for Sessions & Files
     match /{path=**}/sessions/{sessionId} {
-      allow read, list: if isSignedIn();
+      allow read, list: if true;
     }
     match /{path=**}/files/{fileId} {
-      allow read, list: if isSignedIn();
+      allow read, list: if true;
     }
   }
 }
