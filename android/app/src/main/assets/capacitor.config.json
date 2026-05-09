@@ -1,0 +1,6 @@
+{
+	"appId": "com.physiotrack.app",
+	"appName": "PhysioTrack",
+	"webDir": "dist",
+	"bundledWebRuntime": false
+}
