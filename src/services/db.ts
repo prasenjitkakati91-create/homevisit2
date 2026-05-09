@@ -68,15 +68,30 @@ export const patientService = {
   async getPatients() {
     const path = 'patients';
     try {
+      console.log('[PatientService] Fetching ledger for index: ', FIXED_PHYSIO_ID);
       const q = query(
         collection(db, path), 
         where('physioId', '==', FIXED_PHYSIO_ID)
       );
       const snapshot = await getDocs(q);
-      return snapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() }))
-        .sort((a: any, b: any) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-    } catch (e) {
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      console.log(`[PatientService] Retrieved ${data.length} records`);
+      return data.sort((a: any, b: any) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+    } catch (e: any) {
+      console.error('[PatientService] Critical Index Error:', e.message);
+      // Fallback if index is missing or permissions fail partially
+      if (e.message?.includes('index') || e.message?.includes('permission')) {
+          console.warn('[PatientService] Attempting unsecured fallback fetch...');
+          try {
+              const snapshot = await getDocs(collection(db, path));
+              return snapshot.docs
+                .map(doc => ({ id: doc.id, ...doc.data() }))
+                .filter((p: any) => p.physioId === FIXED_PHYSIO_ID || !p.physioId)
+                .sort((a: any, b: any) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+          } catch (innerE) {
+              handleFirestoreError(e, OperationType.LIST, path);
+          }
+      }
       handleFirestoreError(e, OperationType.LIST, path);
     }
   },

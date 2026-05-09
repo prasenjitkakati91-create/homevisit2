@@ -44,7 +44,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        console.log('[Auth] Authenticated as:', firebaseUser.uid, firebaseUser.isAnonymous ? '(Anonymous)' : '(Google)');
+        console.log('[Auth] session verified:', firebaseUser.uid);
         setUser({
           ...firebaseUser,
           name: firebaseUser.displayName || 'Dr. Trishnamoni Haloi',
@@ -53,12 +53,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
         setLoading(false);
       } else {
-        console.log('[Auth] No session, initiating anonymous handover...');
+        console.log('[Auth] No session, attempting safe initialization...');
         try {
+          // Attempt to sign in anonymously to ensure Firestore rules pass
           await signInAnonymously(auth);
-          // We don't set loading(false) here, we wait for the subsequent onAuthStateChanged trigger
+          // loading remains true for a moment until the next state change
         } catch (err) {
-          console.error('[Auth] Anonymous sync failed. Storage will be locked.', err);
+          console.error('[Auth] Safe initialization failed:', err);
           setUser({ 
               uid: 'default_physio', 
               name: 'Dr. Trishnamoni Haloi',
@@ -68,9 +69,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setLoading(false);
         }
       }
+    }, (error) => {
+      console.error('[Auth] critical system error:', error);
+      setLoading(false);
     });
 
-    return () => unsubscribe();
+    // Seatbelt to ensure app doesn't hang forever
+    const authTimeout = setTimeout(() => {
+        setLoading(prev => {
+            if (prev) {
+                console.warn('[Auth] Initialization stall detected, forcing bypass...');
+                return false;
+            }
+            return prev;
+        });
+    }, 5000);
+
+    return () => {
+        unsubscribe();
+        clearTimeout(authTimeout);
+    };
   }, []);
 
   return (

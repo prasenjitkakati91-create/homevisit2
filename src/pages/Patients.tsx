@@ -272,9 +272,17 @@ export const PatientList = () => {
     const fetchPatients = async () => {
       try {
         const data = await patientService.getPatients();
-        setPatients(data);
-      } catch (err) {
-        toast.error('Failed to load patients');
+        setPatients(data || []);
+      } catch (err: any) {
+        console.error('[PatientList] load fault:', err);
+        let errorMsg = 'Failed to load clinical records';
+        try {
+            const detail = JSON.parse(err.message);
+            errorMsg = detail.error || errorMsg;
+        } catch(e) {
+            errorMsg = err.message || errorMsg;
+        }
+        toast.error(errorMsg);
       } finally {
         setLoading(false);
       }

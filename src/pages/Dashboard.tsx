@@ -29,9 +29,17 @@ export const Dashboard = () => {
           sessionService.getTodayVisits()
         ]);
         setStats(statsData);
-        setTodayVisits(visits);
-      } catch (err) {
-        toast.error('Failed to load dashboard data');
+        setTodayVisits(visits || []);
+      } catch (err: any) {
+        console.error('[Dashboard] sync failure:', err);
+        let errorMsg = 'Clinical dashboard sync failure';
+        try {
+            const detail = JSON.parse(err.message);
+            errorMsg = detail.error || errorMsg;
+        } catch(e) {
+            errorMsg = err.message || errorMsg;
+        }
+        toast.error(errorMsg);
       } finally {
         setLoading(false);
       }
