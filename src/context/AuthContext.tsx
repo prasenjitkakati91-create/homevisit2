@@ -51,10 +51,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           role: 'Physiotherapist',
           isMock: false
         });
+        setLoading(false);
       } else {
         console.log('[Auth] No session, initiating anonymous handover...');
         try {
           await signInAnonymously(auth);
+          // We don't set loading(false) here, we wait for the subsequent onAuthStateChanged trigger
         } catch (err) {
           console.error('[Auth] Anonymous sync failed. Storage will be locked.', err);
           setUser({ 
@@ -63,9 +65,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               role: 'Physiotherapist',
               isMock: true
           });
+          setLoading(false);
         }
       }
-      setLoading(false);
     });
 
     return () => unsubscribe();

@@ -127,7 +127,22 @@ const Header = () => {
 
 export const AppLayout: React.FC = () => {
     const location = useLocation();
+    const { loading } = useAuth();
     
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center space-y-6">
+                <div className="w-16 h-16 bg-white rounded-3xl flex items-center justify-center shadow-2xl premium-shadow animate-bounce">
+                    <Users size={32} className="text-blue-600" />
+                </div>
+                <div className="space-y-2 text-center">
+                    <div className="w-12 h-1 h-1 shadow-[0_0_15px_rgba(59,130,246,0.5)] border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
+                    <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em] animate-pulse">Establishing Secure Clinical Protocol...</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-[#F8FAFC]">
             <Header />
