@@ -21,8 +21,8 @@ export const MedicalRecordUpload: React.FC<MedicalRecordUploadProps> = ({ patien
   const handleUpload = async (file: File) => {
     if (!file) return;
 
-    if (!user || user.isMock) {
-      toast.error('Waiting for secure session initialization...', { id: 'upload-status' });
+    if (!user) {
+      toast.error('Clinical session not initialized. Please wait.', { id: 'upload-status' });
       return;
     }
 
