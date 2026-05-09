@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { uploadService } from '../../services/uploadService';
 import { cn } from '../../utils/helpers';
 import { useAuth } from '../../context/AuthContext';
+import { auth } from '../../firebase/config';
 import { toast } from 'sonner';
 
 interface MedicalRecordUploadProps {
@@ -32,6 +33,12 @@ export const MedicalRecordUpload: React.FC<MedicalRecordUploadProps> = ({ patien
     }
 
     // Diagnostic Logging
+    console.log('[MedicalRecordUpload] User Context:', {
+      uid: user?.uid,
+      isAnonymous: user?.isAnonymous,
+      isMock: user?.isMock,
+      authUid: auth.currentUser?.uid
+    });
     console.log('[MedicalRecordUpload] Data Trace:', {
       fileName: file.name,
       fileSize: file.size,

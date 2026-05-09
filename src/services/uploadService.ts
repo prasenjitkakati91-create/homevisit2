@@ -41,11 +41,8 @@ export const uploadService = {
     const storagePath = `patient-files/${patientId}/${timestamp}-${safeName}`;
     const storageRef = ref(storage, storagePath);
 
-    // Force Blob conversion for better Capacitor/Mobile compatibility as requested
-    const blob = new Blob([originalFile], { type: originalFile.type });
-
     const metadata = {
-      contentType: originalFile.type,
+      contentType: originalFile.type || 'application/octet-stream',
       customMetadata: {
         patientId,
         uploadedBy: uid,
@@ -55,15 +52,25 @@ export const uploadService = {
 
     // 3. Start Resumable Upload
     return new Promise((resolve, reject) => {
-      console.log('[UploadService] Launching archive sync:', storagePath);
+      console.log('[UploadService] STARTING TASK:', {
+          path: storagePath,
+          size: originalFile.size,
+          type: originalFile.type || 'unknown'
+      });
       
       // Ensure we hit 0% immediately for UI feedback
       if (onProgress) onProgress(0);
 
-      const uploadTask = uploadBytesResumable(storageRef, blob, metadata);
+      const uploadTask = uploadBytesResumable(storageRef, originalFile, metadata);
+
+      // Diagnostic: Monitor state changes manually
+      const heartbeat = setInterval(() => {
+          console.log('[UploadService] Task State Heartbeat:', uploadTask.snapshot.state, `${uploadTask.snapshot.bytesTransferred}/${uploadTask.snapshot.totalBytes}`);
+      }, 5000);
 
       // 120s timeout detection as requested for stability
       const timeoutId = setTimeout(() => {
+        clearInterval(heartbeat);
         console.error('[UploadService] Sync session timed out');
         uploadTask.cancel();
         reject(new Error('Archive synchronization timed out. Check connection or try a smaller file.'));
@@ -72,23 +79,25 @@ export const uploadService = {
       uploadTask.on(
         'state_changed',
         (snapshot) => {
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          console.log(`[UploadService] Transfer: ${Math.round(progress)}% (${snapshot.bytesTransferred}/${snapshot.totalBytes})`);
+          const progress = (snapshot.totalBytes > 0) ? (snapshot.bytesTransferred / snapshot.totalBytes) * 100 : 0;
+          console.log(`[UploadService] STATE_CHANGED: ${snapshot.state} - ${Math.round(progress)}% (${snapshot.bytesTransferred}/${snapshot.totalBytes})`);
           if (onProgress) onProgress(progress);
         },
         (error) => {
+          clearInterval(heartbeat);
           clearTimeout(timeoutId);
-          console.error('[UploadService] Storage sync reported failure:', error.code, error.message);
+          console.error('[UploadService] STORAGE FAIL:', error.code, error.message, error);
           
           if (error.code === 'storage/canceled') {
             reject(new Error('Synchronization session was interrupted or timed out.'));
           } else if (error.code === 'storage/unauthorized') {
-            reject(new Error('Security Block: You do not have permission to sync with this archive.'));
+            reject(new Error('Security Block: You do not have permission to sync with this archive. Please ensure Storage is enabled in Firebase Console.'));
           } else {
             reject(new Error(`Storage error: ${error.message}`));
           }
         },
         async () => {
+          clearInterval(heartbeat);
           clearTimeout(timeoutId);
           try {
             console.log('[UploadService] Storage verified, finalizing clinical ledger entry...');
