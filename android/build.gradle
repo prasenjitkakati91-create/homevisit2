@@ -25,6 +25,14 @@ allprojects {
     }
 }
 
+subprojects {
+    afterEvaluate { project ->
+        if (project.name == 'capacitor-android' || project.name == 'capacitor-cordova-android-plugins') {
+            project.apply plugin: 'kotlin-android'
+        }
+    }
+}
+
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
