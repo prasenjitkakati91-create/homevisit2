@@ -1,77 +1,42 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // 0. Global Safety Net
+    
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    // Default deny
     match /{document=**} {
       allow read, write: if false;
     }
 
-    // Phase 3: Primitives & Helpers
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    function isValidId(id) {
-      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
-    }
-
-    // In this app, we use a fixed physioId for simplicity in mock mode, 
-    // but in a real app this would be request.auth.uid
-    function isPhysio(physioId) {
-      return physioId == 'default_physio';
-    }
-
-    // Validation Blueprints
-    function isValidPatient(data) {
-      return data.name is string && data.name.size() > 0 && data.name.size() <= 200 &&
-             data.phone is string && data.phone.size() >= 5 &&
-             data.address is string && data.address.size() > 0 &&
-             isPhysio(data.physioId);
-    }
-
-    function isValidCase(data) {
-      return data.diagnosis is string && data.diagnosis.size() > 0 &&
-             data.patientId is string &&
-             isPhysio(data.physioId) &&
-             (data.sessionFee is number || data.sessionFee is int);
-    }
-
-    function isValidSession(data) {
-      return data.date is string &&
-             data.patientId is string &&
-             data.caseId is string &&
-             isPhysio(data.physioId);
-    }
-
-    // Collections
     match /patients/{patientId} {
-      // Allow read/list if it belongs to the physiotherapist
-      allow read, list: if true; // Temporarily very permissive for debugging
-      
-      // Allow create if physioId matches
-      allow create: if request.resource.data.physioId == 'default_physio';
-      
-      // Allow update/delete if physioId matches
-      allow update, delete: if resource.data.physioId == 'default_physio';
+      allow read, list: if isSignedIn();
+      allow write: if isSignedIn();
 
-      // Nested Cases
       match /cases/{caseId} {
-        allow read, list: if true;
-        allow create: if request.resource.data.physioId == 'default_physio';
-        allow update, delete: if resource.data.physioId == 'default_physio';
+        allow read, list: if isSignedIn();
+        allow write: if isSignedIn();
 
-        // Nested Sessions
         match /sessions/{sessionId} {
-          allow read, list: if true;
-          allow create: if request.resource.data.physioId == 'default_physio';
-          allow update, delete: if resource.data.physioId == 'default_physio';
+          allow read, list: if isSignedIn();
+          allow write: if isSignedIn();
         }
+      }
+
+      match /files/{fileId} {
+        allow read, list: if isSignedIn();
+        allow write: if isSignedIn();
       }
     }
 
-    // Collection Group Rules for cross-patient session queries (e.g. Dashboard)
+    // Collection Group for Sessions & Files
     match /{path=**}/sessions/{sessionId} {
-      allow read, list: if true;
+      allow read, list: if isSignedIn();
+    }
+    match /{path=**}/files/{fileId} {
+      allow read, list: if isSignedIn();
     }
   }
 }

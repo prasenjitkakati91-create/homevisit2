@@ -51,6 +51,20 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["date", "patientId", "caseId", "physioId"]
+    },
+    "FileMetadata": {
+      "title": "File Metadata",
+      "description": "Metadata for uploaded medical documents",
+      "type": "object",
+      "properties": {
+        "fileName": { "type": "string" },
+        "fileType": { "type": "string" },
+        "fileUrl": { "type": "string" },
+        "uploadedAt": { "type": "string", "format": "date-time" },
+        "uploadedBy": { "type": "string" },
+        "size": { "type": "integer" }
+      },
+      "required": ["fileName", "fileType", "fileUrl", "uploadedAt", "uploadedBy", "size"]
     }
   },
   "firestore": {
@@ -65,6 +79,10 @@
     "patients/{patientId}/cases/{caseId}/sessions": {
       "schema": "Session",
       "description": "Sessions belonging to a specific case"
+    },
+    "patients/{patientId}/files": {
+      "schema": "FileMetadata",
+      "description": "Medical files and reports for a patient"
     }
   }
 }

@@ -25,8 +25,9 @@ import {
   Wallet
 } from 'lucide-react';
 import { Badge, Card, Button, Input, Textarea, Select, GlassCard } from '../components/ui/Generic';
-import { patientService, caseService, sessionService } from '../services/db';
-import { FileUpload } from '../components/ui/FileUpload';
+import { patientService, caseService, sessionService, fileService } from '../services/db';
+import { MedicalRecordUpload } from '../components/patient/MedicalRecordUpload';
+import { FileList } from '../components/patient/FileList';
 import { formatDate, formatCurrency, cn } from '../utils/helpers';
 import { generateReceiptPDF, shareOnWhatsApp, generateAppointmentMessage, generatePaymentMessage } from '../utils/sharing';
 import { toast } from 'sonner';
@@ -170,14 +171,18 @@ export const PatientDetail = () => {
   const navigate = useNavigate();
   const [patient, setPatient] = useState<any>(null);
   const [cases, setCases] = useState<any[]>([]);
+  const [files, setFiles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!patientId) return;
+
     const fetchData = async () => {
       try {
-        if (!patientId) return;
-        const p = await patientService.getPatient(patientId);
-        const c = await caseService.getCases(patientId);
+        const [p, c] = await Promise.all([
+          patientService.getPatient(patientId),
+          caseService.getCases(patientId)
+        ]);
         setPatient(p);
         setCases(c || []);
       } catch (err) {
@@ -188,6 +193,13 @@ export const PatientDetail = () => {
       }
     };
     fetchData();
+
+    // Real-time files
+    const unsubscribe = fileService.subscribeFiles(patientId, (f) => {
+      setFiles(f || []);
+    });
+
+    return () => unsubscribe();
   }, [patientId]);
 
   const handleDeletePatient = async () => {
@@ -298,47 +310,27 @@ export const PatientDetail = () => {
       </motion.div>
 
       {/* Diagnostic Records */}
-      <section className="space-y-4 px-2">
+      <section className="space-y-6 px-2">
         <div className="flex items-center gap-2">
             <div className="w-1 h-3 bg-blue-600 rounded-full" />
-            <h2 className="text-xs font-black text-slate-950 uppercase tracking-widest leading-none">Digital Archive</h2>
+            <h2 className="text-xs font-black text-slate-950 uppercase tracking-widest leading-none">Diagnostic Matrix</h2>
         </div>
         
-        <GlassCard className="p-6 border-dashed border-slate-200">
-            <FileUpload 
-            path={`patients/${patientId}/reports`} 
-            onUploadComplete={async (url) => {
-                const reports = [...(patient.reports || []), { url, date: new Date().toISOString() }];
-                await patientService.updatePatient(patientId!, { reports });
-                setPatient({ ...patient, reports });
-            }} 
-            />
-        </GlassCard>
+        <MedicalRecordUpload 
+          patientId={patientId!} 
+          onSuccess={() => {
+            // Subscription handles real-time update
+            console.log('[Treatment] Upload success callback');
+          }} 
+        />
         
-        <div className="grid grid-cols-1 gap-3">
-          {patient.reports?.map((report: any, idx: number) => (
-            <motion.div key={idx} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.05 }}>
-              <Card className="p-4 group border-slate-50/50">
-                  <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 bg-slate-50 border border-slate-100/50 rounded-xl flex items-center justify-center text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-all">
-                              <FileText size={18} />
-                          </div>
-                          <div className="space-y-0.5">
-                              <span className="text-[10px] font-black text-slate-950 uppercase tracking-widest leading-none">Report R{idx + 1}</span>
-                              <p className="text-[9px] font-bold text-slate-400">{formatDate(report.date)}</p>
-                          </div>
-                      </div>
-                      <div className="flex gap-2">
-                          <button onClick={() => window.open(report.url, '_blank')} className="p-2.5 bg-slate-50 text-slate-400 hover:text-blue-600 rounded-xl transition-all border border-slate-100/50">
-                              <ExternalLink size={14} />
-                          </button>
-                      </div>
-                  </div>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
+        <FileList 
+          patientId={patientId!} 
+          files={files} 
+          onDeleteSuccess={() => {
+            // Subscription handles real-time update
+          }}
+        />
       </section>
 
       {/* Treatment Protocols */}

@@ -1,6 +1,6 @@
 {
   "name": "PhysioTrack",
-  "description": "Simple, fast, mobile-first physiotherapy home visit management app.",
-  "requestFramePermissions": [],
+  "description": "Professional practice management system for clinical physiotherapy records, patient session tracking, and medical file archiving.",
+  "requestFramePermissions": ["camera"],
   "majorCapabilities": []
 }

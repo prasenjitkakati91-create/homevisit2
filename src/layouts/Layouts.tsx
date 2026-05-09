@@ -4,6 +4,7 @@ import { Home, Users, Calendar, CreditCard, Plus, Bell, User } from 'lucide-reac
 import { useAuth } from '../context/AuthContext';
 import { cn } from '../utils/helpers';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 
 const BottomNav = () => {
   const navItems = [
@@ -55,7 +56,7 @@ const BottomNav = () => {
 };
 
 const Header = () => {
-    const { user } = useAuth();
+    const { user, signInWithGoogle, logout } = useAuth();
     const [scrolled, setScrolled] = React.useState(false);
     
     React.useEffect(() => {
@@ -71,9 +72,23 @@ const Header = () => {
         return "Good Evening";
     };
 
+    const handleAuthAction = () => {
+        if (user?.isMock) {
+            signInWithGoogle()
+                .then(() => toast.success('Connected to Clinical Cloud'))
+                .catch((err) => {
+                    toast.error('Cloud Sync failed. Check credentials.');
+                });
+        } else {
+            if (window.confirm('Disconnect from clinical cloud?')) {
+                logout().then(() => toast.info('Reverted to local preview mode'));
+            }
+        }
+    };
+
     return (
         <header className="sticky top-0 transition-all duration-500 z-40 px-6 py-5 flex items-center justify-between pt-safe bg-slate-950 text-white shadow-xl border-b border-white/5">
-           <div className="flex flex-col">
+            <div className="flex flex-col">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">{getTimeGreeting()}</span>
               <h1 className="text-lg font-black text-white tracking-tight font-display italic leading-none uppercase">
                 {user?.name ? (
@@ -86,7 +101,26 @@ const Header = () => {
                   </>
                 )}
               </h1>
-           </div>
+            </div>
+
+            <button 
+                onClick={handleAuthAction}
+                className={cn(
+                    "relative w-10 h-10 rounded-2xl flex items-center justify-center transition-all active:scale-95 border",
+                    user?.isMock 
+                        ? "bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-800" 
+                        : "bg-blue-600/10 border-blue-500/20 text-blue-500 hover:bg-blue-600/20"
+                )}
+            >
+                {user?.isMock ? (
+                    <User size={18} />
+                ) : (
+                    <div className="relative">
+                        <User size={18} />
+                        <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-500 border-2 border-slate-950 rounded-full" />
+                    </div>
+                )}
+            </button>
         </header>
     );
 };

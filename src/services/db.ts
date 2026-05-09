@@ -6,6 +6,7 @@ import {
   doc, 
   getDoc, 
   getDocs, 
+  onSnapshot,
   query, 
   where, 
   orderBy, 
@@ -14,8 +15,7 @@ import {
   collectionGroup,
   limit
 } from 'firebase/firestore';
-import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
-import { db, auth, storage } from '../firebase/config';
+import { db, auth } from '../firebase/config';
 
 export enum OperationType {
   CREATE = 'create',
@@ -336,31 +336,51 @@ export const sessionService = {
   }
 };
 
-// STORAGE
-export const storageService = {
-  uploadFile: (path: string, file: File, onProgress?: (p: number) => void): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const storageRef = ref(storage, `${path}/${Date.now()}_${file.name}`);
-      const uploadTask = uploadBytesResumable(storageRef, file);
+// FILES & REPORTS
+export const fileService = {
+  async addFile(patientId: string, data: any) {
+    const path = `patients/${patientId}/files`;
+    console.log('fileService: Saving metadata for file to Firestore...', path);
+    try {
+      const docRef = await addDoc(collection(db, 'patients', patientId, 'files'), {
+        ...data,
+        patientId,
+        uploadedBy: auth.currentUser?.uid || FIXED_PHYSIO_ID,
+        uploadedAt: serverTimestamp(),
+      });
+      console.log('fileService: Firestore document created with ID:', docRef.id);
+      return docRef;
+    } catch (e) {
+      console.error('fileService: addFile Error:', e);
+      handleFirestoreError(e, OperationType.CREATE, path);
+    }
+  },
 
-      uploadTask.on(
-        'state_changed',
-        (snapshot) => {
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          if (onProgress) onProgress(progress);
-        },
-        (error) => reject(error),
-        () => {
-          getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-            resolve(downloadURL);
-          });
-        }
-      );
+  async getFiles(patientId: string) {
+    const path = `patients/${patientId}/files`;
+    try {
+      const q = query(collection(db, 'patients', patientId, 'files'), orderBy('uploadedAt', 'desc'));
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (e) {
+      handleFirestoreError(e, OperationType.LIST, path);
+    }
+  },
+
+  subscribeFiles(patientId: string, callback: (files: any[]) => void) {
+    const q = collection(db, 'patients', patientId, 'files'); // No orderBy here to prevent omission of null timestamps in local cache
+    return onSnapshot(q, (snapshot) => {
+      const files = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      // Sort client side to handle serverTimestamp synchronization
+      const sortedFiles = files.sort((a: any, b: any) => {
+        const dateA = a.uploadedAt?.toMillis ? a.uploadedAt.toMillis() : (a.uploadedAt || 0);
+        const dateB = b.uploadedAt?.toMillis ? b.uploadedAt.toMillis() : (b.uploadedAt || 0);
+        return dateB - dateA;
+      });
+      callback(sortedFiles);
+    }, (error) => {
+      console.error('[FileService] Snapshot subscription failure:', error);
+      callback([]); 
     });
-  },
-
-  deleteFile: async (fileUrl: string) => {
-    const fileRef = ref(storage, fileUrl);
-    await deleteObject(fileRef);
-  },
+  }
 };

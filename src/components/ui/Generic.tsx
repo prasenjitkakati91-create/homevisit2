@@ -63,7 +63,11 @@ export const Card: React.FC<{ children: React.ReactNode; className?: string; onC
   </div>
 );
 
-export const GlassCard: React.FC<{ children: React.ReactNode; className?: string; onClick?: () => void }> = ({ children, className, onClick }) => (
+export const GlassCard: React.FC<{ 
+  children: React.ReactNode; 
+  className?: string; 
+  onClick?: () => void 
+}> = ({ children, className, onClick }) => (
   <div 
     onClick={onClick}
     className={cn(
