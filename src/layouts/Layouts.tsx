@@ -103,24 +103,6 @@ const Header = () => {
               </h1>
             </div>
 
-            <button 
-                onClick={handleAuthAction}
-                className={cn(
-                    "relative w-10 h-10 rounded-2xl flex items-center justify-center transition-all active:scale-95 border",
-                    user?.isMock 
-                        ? "bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-800" 
-                        : "bg-blue-600/10 border-blue-500/20 text-blue-500 hover:bg-blue-600/20"
-                )}
-            >
-                {user?.isMock ? (
-                    <User size={18} />
-                ) : (
-                    <div className="relative">
-                        <User size={18} />
-                        <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-500 border-2 border-slate-950 rounded-full" />
-                    </div>
-                )}
-            </button>
         </header>
     );
 };
@@ -131,13 +113,80 @@ export const AppLayout: React.FC = () => {
     
     if (loading) {
         return (
-            <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center space-y-6">
-                <div className="w-16 h-16 bg-white rounded-3xl flex items-center justify-center shadow-2xl premium-shadow animate-bounce">
-                    <Users size={32} className="text-blue-600" />
+            <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 relative overflow-hidden">
+                {/* Background Glows */}
+                <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 1 }}
+                    className="absolute inset-0 z-0"
+                >
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px] animate-pulse" />
+                    <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-indigo-600/10 rounded-full blur-[80px]" />
+                </motion.div>
+
+                <div className="relative z-10 flex flex-col items-center space-y-10">
+                    {/* Central Icon with advanced animation */}
+                    <div className="relative">
+                        <motion.div
+                            animate={{ 
+                                scale: [1, 1.05, 1],
+                                rotate: [0, 5, -5, 0]
+                            }}
+                            transition={{ 
+                                duration: 4, 
+                                repeat: Infinity,
+                                ease: "easeInOut"
+                            }}
+                            className="w-24 h-24 bg-white rounded-[2rem] flex items-center justify-center shadow-[0_20px_50px_rgba(59,130,246,0.3)] relative z-20"
+                        >
+                            <Users size={44} className="text-blue-600" />
+                        </motion.div>
+                        
+                        {/* Orbiting rings */}
+                        <motion.div 
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+                            className="absolute -inset-4 border border-blue-500/20 rounded-full border-dashed"
+                        />
+                        <motion.div 
+                            animate={{ rotate: -360 }}
+                            transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+                            className="absolute -inset-8 border border-white/5 rounded-full border-dashed"
+                        />
+                    </div>
+
+                    {/* Progress Text */}
+                    <div className="space-y-4 text-center">
+                        <div className="flex flex-col items-center space-y-2">
+                            <h2 className="text-white text-xl font-black tracking-tight uppercase italic font-display">
+                                Physio<span className="text-blue-500 not-italic">Track</span>
+                            </h2>
+                            <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.4em] animate-pulse">
+                                Initializing Secure Protocol
+                            </p>
+                        </div>
+
+                        {/* Minimalist Progress Bar */}
+                        <div className="w-48 h-1 bg-slate-900 rounded-full overflow-hidden border border-white/5 mx-auto">
+                            <motion.div 
+                                initial={{ x: "-100%" }}
+                                animate={{ x: "100%" }}
+                                transition={{ 
+                                    duration: 2, 
+                                    repeat: Infinity, 
+                                    ease: "easeInOut" 
+                                }}
+                                className="w-1/2 h-full bg-gradient-to-r from-blue-600 to-indigo-500 shadow-[0_0_15px_rgba(59,130,246,0.5)]"
+                            />
+                        </div>
+                    </div>
                 </div>
-                <div className="space-y-2 text-center">
-                    <div className="w-12 h-1 h-1 shadow-[0_0_15px_rgba(59,130,246,0.5)] border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
-                    <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em] animate-pulse">Establishing Secure Clinical Protocol...</p>
+
+                <div className="absolute bottom-10 left-0 right-0 text-center">
+                    <p className="text-slate-600 text-[8px] font-bold uppercase tracking-[0.2em] font-mono">
+                        System v2.4.9 // Neural Sync Active
+                    </p>
                 </div>
             </div>
         );

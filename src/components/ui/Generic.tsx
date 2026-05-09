@@ -140,3 +140,7 @@ export const Textarea: React.FC<React.TextareaHTMLAttributes<HTMLTextAreaElement
   </div>
 );
 
+export const Skeleton: React.FC<{ className?: string }> = ({ className }) => (
+  <div className={cn('bg-slate-100 animate-pulse rounded-2xl', className)} />
+);
+

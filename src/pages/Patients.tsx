@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { Badge, Card, Button, Input, Select, Textarea, GlassCard } from '../components/ui/Generic';
+import { Badge, Card, Button, Input, Select, Textarea, GlassCard, Skeleton } from '../components/ui/Generic';
 import { patientService } from '../services/db';
 import { ArrowLeft, UserPlus, Search as SearchIcon, Phone, Users, ChevronRight, Activity } from 'lucide-react';
 import { toast } from 'sonner';
@@ -181,8 +181,27 @@ export const EditPatient = () => {
 
     if (fetching) return (
         <div className="p-8 space-y-6">
-            <div className="h-10 w-24 bg-slate-100 animate-pulse rounded-2xl" />
-            <div className="h-96 bg-white border border-slate-50 rounded-[3rem] animate-pulse" />
+            <Skeleton className="h-10 w-24 rounded-2xl" />
+            <div className="bg-white border border-slate-50 rounded-[3rem] p-8 space-y-8">
+                <div className="space-y-2">
+                    <Skeleton className="h-3 w-16" />
+                    <Skeleton className="h-12 w-full rounded-2xl" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Skeleton className="h-3 w-16" />
+                        <Skeleton className="h-12 w-full rounded-2xl" />
+                    </div>
+                    <div className="space-y-2">
+                        <Skeleton className="h-3 w-16" />
+                        <Skeleton className="h-12 w-full rounded-2xl" />
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <Skeleton className="h-3 w-16" />
+                    <Skeleton className="h-12 w-full rounded-2xl" />
+                </div>
+            </div>
         </div>
     );
   
@@ -324,7 +343,18 @@ export const PatientList = () => {
 
       {loading ? (
         <div className="space-y-4 px-2">
-          {[1, 2, 3, 4, 5].map(i => <div key={i} className="h-24 bg-white border border-slate-50 rounded-[2.5rem] animate-pulse" />)}
+          {[1, 2, 3, 4, 5].map(i => (
+              <div key={i} className="bg-white border border-slate-50 rounded-[2.5rem] p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                      <Skeleton className="w-14 h-14 rounded-[1.25rem]" />
+                      <div className="space-y-2">
+                          <Skeleton className="h-4 w-32" />
+                          <Skeleton className="h-2 w-24" />
+                      </div>
+                  </div>
+                  <Skeleton className="w-10 h-10 rounded-2xl" />
+              </div>
+          ))}
         </div>
       ) : filteredPatients.length === 0 ? (
         <div className="px-2">

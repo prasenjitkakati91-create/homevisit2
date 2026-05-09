@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Upload, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { Skeleton } from '../ui/Generic';
 import { uploadService } from '../../services/uploadService';
 import { cn } from '../../utils/helpers';
 import { useAuth } from '../../context/AuthContext';
@@ -72,7 +73,15 @@ export const MedicalRecordUpload: React.FC<MedicalRecordUploadProps> = ({ patien
     }
   };
 
-  if (authLoading) return <div className="h-40 bg-slate-50 border-2 border-dashed border-slate-100 rounded-[2.5rem] flex items-center justify-center animate-pulse" />;
+  if (authLoading) return (
+    <div className="h-40 bg-white border-2 border-dashed border-slate-100 rounded-[2.5rem] flex flex-col items-center justify-center p-8 space-y-4">
+        <Skeleton className="w-16 h-16 rounded-3xl" />
+        <div className="space-y-2 w-full flex flex-col items-center">
+            <Skeleton className="h-3 w-32" />
+            <Skeleton className="h-2 w-48" />
+        </div>
+    </div>
+  );
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0]) {

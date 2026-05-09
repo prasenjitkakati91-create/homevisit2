@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate, Link } from 'react-router-dom';
 import { Calendar, Users, TrendingUp, Wallet, Clock, Plus, Search, ArrowRight, Activity, CreditCard, CheckCircle } from 'lucide-react';
-import { Card, Button, Badge } from '../components/ui/Generic';
+import { Card, Button, Badge, Skeleton } from '../components/ui/Generic';
 import { sessionService } from '../services/db';
 import { formatCurrency, cn, formatDate } from '../utils/helpers';
 import { toast } from 'sonner';
@@ -49,11 +49,51 @@ export const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="space-y-8 animate-pulse px-1">
-        <div className="grid grid-cols-2 gap-4">
-          {[1, 2, 3, 4].map(i => <div key={i} className="h-40 bg-white rounded-[2.5rem] border border-slate-100" />)}
+      <div className="space-y-8 px-1">
+        {/* Main Card Skeleton */}
+        <div className="h-48 bg-white rounded-[3rem] border border-slate-100 p-7 space-y-4">
+            <Skeleton className="h-3 w-20" />
+            <Skeleton className="h-6 w-32" />
+            <div className="pt-4 space-y-2">
+                <Skeleton className="h-10 w-16 rounded-xl" />
+                <Skeleton className="h-3 w-40" />
+            </div>
         </div>
-        <div className="h-64 bg-white rounded-[2.5rem] border border-slate-100" />
+
+        {/* Stats Grid Skeleton */}
+        <div className="grid grid-cols-2 gap-4">
+          {[1, 2].map(i => (
+            <div key={i} className="h-36 bg-white rounded-[2.5rem] border border-slate-100 p-5 flex flex-col justify-between">
+                <Skeleton className="h-10 w-10 rounded-[1.25rem]" />
+                <div className="space-y-2">
+                    <Skeleton className="h-2 w-12" />
+                    <Skeleton className="h-4 w-20" />
+                </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Timeline Skeleton */}
+        <div className="space-y-4">
+            <div className="flex items-center gap-2 px-2">
+                <div className="w-1 h-4 bg-slate-100 rounded-full" />
+                <Skeleton className="h-3 w-24" />
+            </div>
+            <div className="space-y-3">
+                {[1, 2, 3].map(i => (
+                    <div key={i} className="h-20 bg-white rounded-[2.5rem] border border-slate-50 p-4 flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <Skeleton className="w-12 h-12 rounded-2xl" />
+                            <div className="space-y-2">
+                                <Skeleton className="h-3 w-24" />
+                                <Skeleton className="h-2 w-16" />
+                            </div>
+                        </div>
+                        <Skeleton className="w-10 h-10 rounded-2xl" />
+                    </div>
+                ))}
+            </div>
+        </div>
       </div>
     );
   }
