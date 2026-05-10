@@ -250,6 +250,23 @@ export const sessionService = {
     }
   },
 
+  async getVisitsByDate(date: string) {
+    try {
+      const q = query(
+        collectionGroup(db, 'sessions'),
+        where('physioId', '==', FIXED_PHYSIO_ID)
+      );
+      const snapshot = await getDocs(q);
+      return snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() } as any))
+        .filter(s => s.date === date)
+        .sort((a, b) => a.date.localeCompare(b.date));
+    } catch (e) {
+      console.error(e);
+      return [];
+    }
+  },
+
   async getTodayVisits() {
     try {
       const q = query(

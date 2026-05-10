@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, signInAnonymously, type User } from 'firebase/auth';
+import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, type User } from 'firebase/auth';
 import { auth } from '../firebase/config';
 
 interface AuthContextType {
@@ -34,8 +34,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async () => {
     try {
       await signOut(auth);
-      // After logout, sign in anonymously again to maintain storage access
-      await signInAnonymously(auth);
     } catch (err) {
       console.error('Logout error:', err);
     }
@@ -53,21 +51,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
         setLoading(false);
       } else {
-        console.log('[Auth] No session, attempting safe initialization...');
-        try {
-          // Attempt to sign in anonymously to ensure Firestore rules pass
-          await signInAnonymously(auth);
-          // loading remains true for a moment until the next state change
-        } catch (err) {
-          console.error('[Auth] Safe initialization failed:', err);
-          setUser({ 
-              uid: 'default_physio', 
-              name: 'Dr. Trishnamoni Haloi',
-              role: 'Physiotherapist',
-              isMock: true
-          });
-          setLoading(false);
-        }
+        console.log('[Auth] No session, setting default guest user...');
+        setUser({ 
+            uid: 'default_physio', 
+            name: 'Dr. Trishnamoni Haloi',
+            role: 'Physiotherapist',
+            isMock: true
+        });
+        setLoading(false);
       }
     }, (error) => {
       console.error('[Auth] critical system error:', error);

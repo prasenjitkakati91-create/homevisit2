@@ -778,15 +778,7 @@ export const CaseDetail = () => {
           )}
         </div>
 
-        {/* Global Action Fab */}
-        {!isCompleted && (
-            <button 
-                className="fixed bottom-28 right-8 w-16 h-16 bg-slate-950 text-white rounded-[2rem] flex items-center justify-center shadow-2xl shadow-slate-900/40 z-50 active:scale-90 transition-all border border-white/10 md:hidden"
-                onClick={() => navigate(`/patients/${patientId}/cases/${caseId}/sessions/add`)}
-            >
-                <Plus size={32} />
-            </button>
-        )}
+        {/* Global Action FAB removed as per request to remove + icon */}
       </div>
     );
 };

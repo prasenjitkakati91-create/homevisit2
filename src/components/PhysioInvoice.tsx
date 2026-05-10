@@ -217,7 +217,7 @@ export const PhysioInvoice: React.FC<PhysioInvoiceProps> = ({
           className="w-full h-full sm:h-auto sm:max-w-3xl bg-slate-50/50 rounded-none sm:rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col my-auto print:shadow-none print:rounded-none print:static"
         >
           {/* Header - Control Bar (Hidden on Print) */}
-          <div className="px-4 sm:px-8 py-4 sm:py-5 bg-white border-b border-slate-100 flex items-center justify-between print:hidden">
+          <div className="px-4 sm:px-8 py-4 sm:py-5 bg-white border-b border-slate-100 flex items-center justify-between print:hidden pt-[calc(1rem+env(safe-area-inset-top))] sm:pt-5">
             <div className="flex items-center gap-2 sm:gap-3">
               <div className="p-1.5 sm:p-2 bg-blue-50 text-blue-600 rounded-xl">
                 <CreditCard size={18} />
@@ -451,7 +451,7 @@ export const PhysioInvoice: React.FC<PhysioInvoiceProps> = ({
           </div>
 
             {/* Action Buttons Container (Hidden on Print) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 print:hidden px-4 sm:px-0">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 print:hidden px-4 sm:px-0 pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:pb-0">
               <Button
                 className="h-16 rounded-[1.5rem] bg-green-600 hover:bg-green-700 text-white border-none shadow-lg shadow-green-100 space-x-3 transition-all active:scale-95 flex items-center justify-center disabled:opacity-80 disabled:cursor-not-allowed"
                 onClick={shareWhatsApp}
@@ -512,7 +512,7 @@ export const PhysioInvoice: React.FC<PhysioInvoiceProps> = ({
               initial={{ opacity: 0, y: 50, scale: 0.9 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 50, scale: 0.9 }}
-              className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] px-6 py-3 rounded-2xl shadow-xl flex items-center gap-3 font-bold text-sm ${
+              className={`fixed bottom-[calc(2rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 z-[100] px-6 py-3 rounded-2xl shadow-xl flex items-center gap-3 font-bold text-sm ${
                 toastMessage.type === "success"
                   ? "bg-green-600 text-white shadow-green-900/20"
                   : toastMessage.type === "error"

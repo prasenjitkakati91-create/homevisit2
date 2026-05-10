@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 
 export const Dashboard = () => {
   const navigate = useNavigate();
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [stats, setStats] = useState({
     todaySessions: 0,
     activePatients: 0,
@@ -18,34 +19,38 @@ export const Dashboard = () => {
     monthlySessions: 0
   });
 
-  const [todayVisits, setTodayVisits] = useState<any[]>([]);
+  const [visits, setVisits] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [visitsLoading, setVisitsLoading] = useState(false);
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
+    const fetchStats = async () => {
       try {
-        const [statsData, visits] = await Promise.all([
-          sessionService.getDashboardStats(),
-          sessionService.getTodayVisits()
-        ]);
+        const statsData = await sessionService.getDashboardStats();
         setStats(statsData);
-        setTodayVisits(visits || []);
       } catch (err: any) {
-        console.error('[Dashboard] sync failure:', err);
-        let errorMsg = 'Clinical dashboard sync failure';
-        try {
-            const detail = JSON.parse(err.message);
-            errorMsg = detail.error || errorMsg;
-        } catch(e) {
-            errorMsg = err.message || errorMsg;
-        }
-        toast.error(errorMsg);
+        console.error('[Dashboard] Stats sync failure:', err);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  useEffect(() => {
+    const fetchVisits = async () => {
+      setVisitsLoading(true);
+      try {
+        const data = await sessionService.getVisitsByDate(selectedDate);
+        setVisits(data || []);
+      } catch (err: any) {
+        console.error('[Dashboard] Visits fetch failure:', err);
+        toast.error('Failed to load schedule for selected date');
       } finally {
+        setVisitsLoading(false);
         setLoading(false);
       }
     };
-    fetchDashboardData();
-  }, []);
+    fetchVisits();
+  }, [selectedDate]);
 
   if (loading) {
     return (
@@ -155,35 +160,71 @@ export const Dashboard = () => {
         />
       </div>
 
+      {/* Date Selector */}
+      <section className="space-y-4">
+        <div className="flex items-center gap-2 px-2">
+            <div className="w-1 h-4 bg-indigo-600 rounded-full" />
+            <h2 className="text-xs font-black text-slate-900 uppercase tracking-widest leading-none">Schedule Filter</h2>
+        </div>
+        <Card className="p-4 bg-white/80 backdrop-blur-md border-slate-100 flex items-center justify-between gap-4">
+            <div className="space-y-1">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Active Date</p>
+                <p className="text-sm font-bold text-indigo-600">{formatDate(selectedDate)}</p>
+            </div>
+            <input 
+                type="date" 
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all"
+            />
+        </Card>
+      </section>
+
       {/* Today's Schedule - Timeline Style */}
       <section className="space-y-4">
         <div className="flex items-center justify-between px-2">
            <div className="flex items-center gap-2">
               <div className="w-1 h-4 bg-blue-600 rounded-full" />
-              <h2 className="text-xs font-black text-slate-900 uppercase tracking-widest leading-none">Today's Timeline</h2>
+              <h2 className="text-xs font-black text-slate-900 uppercase tracking-widest leading-none">
+                {selectedDate === new Date().toISOString().split('T')[0] ? "Today's Schedule" : `${formatDate(selectedDate)} Schedule`}
+              </h2>
            </div>
-           {todayVisits.length > 0 && <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{todayVisits.length} appointments</span>}
+           {visits.length > 0 && <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{visits.length} appointments</span>}
         </div>
 
-        {todayVisits.length === 0 ? (
+        {visitsLoading ? (
+            <div className="space-y-3">
+                {[1, 2].map(i => (
+                    <div key={i} className="h-20 bg-white rounded-[2.5rem] border border-slate-50 p-4 flex items-center justify-between animate-pulse">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-slate-100 rounded-2xl" />
+                            <div className="space-y-2">
+                                <div className="h-3 w-24 bg-slate-100 rounded" />
+                                <div className="h-2 w-16 bg-slate-50 rounded" />
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        ) : visits.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center space-y-4 border border-dashed border-slate-200 bg-white/60 backdrop-blur-xl rounded-[2.5rem]">
             <div className="w-14 h-14 bg-white/50 rounded-2xl flex items-center justify-center text-slate-200 shadow-sm border border-white">
               <Calendar size={26} />
             </div>
             <div className="space-y-1">
               <p className="text-slate-900 font-bold text-sm tracking-tight text-center">Schedule Vacant</p>
-              <p className="text-slate-400 text-[10px] font-medium uppercase tracking-[0.1em] text-center">Ready for input</p>
+              <p className="text-slate-400 text-[10px] font-medium uppercase tracking-[0.1em] text-center">No appointments on this date</p>
             </div>
             <Button size="sm" variant="outline" onClick={() => navigate('/patients')} className="rounded-xl mt-2 border-slate-200 bg-white">Add Session</Button>
           </div>
         ) : (
           <div className="space-y-3">
-             {todayVisits.map((visit, idx) => (
+             {visits.map((visit, idx) => (
                <motion.div
                 key={visit.id}
                 initial={{ opacity: 0, x: -15 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.3 + idx * 0.1 }}
+                transition={{ delay: 0.1 + idx * 0.05 }}
                >
                 <Link to={`/patients/${visit.patientId}/cases/${visit.caseId}`}>
                     <Card className="p-4 group hover:border-blue-200/50 transition-all border-slate-100/50">
@@ -197,7 +238,7 @@ export const Dashboard = () => {
                                     <div className="flex items-center gap-2">
                                         <div className="flex items-center gap-1 text-slate-400">
                                             <Clock size={10} />
-                                            <p className="text-[9px] font-bold uppercase tracking-wider">{formatDate(visit.date)}</p>
+                                            <p className="text-[9px] font-bold uppercase tracking-wider">{visit.time || 'Schedule Entry'}</p>
                                         </div>
                                         <Badge variant={visit.paymentStatus === 'Paid' ? 'success' : 'warning'} className="px-2 py-0.5 text-[8px] transform scale-90 origin-left">
                                             {visit.paymentStatus}

@@ -71,7 +71,7 @@ export const AddPatient = () => {
             />
             <div className="grid grid-cols-2 gap-4">
               <Input
-                label="Primary Contact"
+                label="Contact No."
                 type="tel"
                 placeholder="98XXXXXXXX"
                 value={formData.phone}
@@ -232,7 +232,7 @@ export const EditPatient = () => {
             />
             <div className="grid grid-cols-2 gap-4">
               <Input
-                label="Phone"
+                label="Contact No."
                 type="tel"
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}

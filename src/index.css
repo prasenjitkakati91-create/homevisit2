@@ -47,9 +47,14 @@
 }
 
 @layer base {
-  body {
+  html, body {
+    @apply bg-[#F8FAFC] antialiased touch-none overflow-x-hidden h-full;
+    overscroll-behavior-y: none;
     -webkit-tap-highlight-color: transparent;
-    @apply bg-[#F8FAFC] text-slate-900 antialiased selection:bg-blue-100 selection:text-blue-900 overflow-x-hidden;
+  }
+  
+  body {
+    @apply text-slate-900 selection:bg-blue-100 selection:text-blue-900;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
   
@@ -82,11 +87,37 @@
   }
 
   .pb-safe {
-    padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
   }
   
   .pt-safe {
     padding-top: env(safe-area-inset-top);
+  }
+
+  .mb-safe {
+    margin-bottom: env(safe-area-inset-bottom);
+  }
+
+  .mt-safe {
+    margin-top: env(safe-area-inset-top);
+  }
+
+  .pl-safe {
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .pr-safe {
+    padding-right: env(safe-area-inset-right);
+  }
+
+  .px-safe {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  .bg-safe-bottom {
+    @apply bg-slate-900;
+    padding-bottom: env(safe-area-inset-bottom);
   }
 
   .no-scrollbar::-webkit-scrollbar {
