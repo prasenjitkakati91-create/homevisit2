@@ -285,6 +285,24 @@ export const sessionService = {
     }
   },
 
+  async getMonthlySessions() {
+    try {
+      const q = query(
+        collectionGroup(db, 'sessions'),
+        where('physioId', '==', FIXED_PHYSIO_ID)
+      );
+      const snapshot = await getDocs(q);
+      const currentMonth = new Date().toISOString().substring(0, 7); // YYYY-MM
+      return snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() } as any))
+        .filter(s => s.date && s.date.startsWith(currentMonth))
+        .sort((a, b) => b.date.localeCompare(a.date));
+    } catch (e) {
+      console.error(e);
+      return [];
+    }
+  },
+
   async getUpcomingVisits() {
     try {
       const q = query(

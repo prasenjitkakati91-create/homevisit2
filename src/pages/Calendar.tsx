@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { patientService, sessionService, caseService } from '../services/db';
 import { formatDate, formatCurrency, cn } from '../utils/helpers';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, X } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, X, CheckCircle } from 'lucide-react';
 import { Card, GlassCard, Badge, Button, Select, Input } from '../components/ui/Generic';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'motion/react';
@@ -194,7 +194,7 @@ export const CalendarPage = () => {
     };
 
     return (
-        <div className="space-y-8 pb-32 px-1">
+        <div className="space-y-8 pb-6 px-1">
             <div className="space-y-1">
                 <p className="text-[9px] font-black text-blue-500 uppercase tracking-widest leading-none">Practice Timeline</p>
                 <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-none italic font-display">Clinical <span className="not-italic text-blue-800">Calendar</span></h1>
@@ -278,43 +278,55 @@ export const CalendarPage = () => {
                                 <motion.div
                                     key={visit.id}
                                     layout
-                                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
                                     exit={{ opacity: 0, scale: 0.9 }}
                                     transition={{ delay: idx * 0.03 }}
                                 >
-                                    <GlassCard 
-                                        onClick={() => navigate(`/patients/${visit.patientId}/cases/${visit.caseId}`)}
-                                        className="flex items-center justify-between !p-5 hover:border-blue-300 transition-all cursor-pointer group"
-                                    >
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-14 h-14 bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200/60 shadow-[0_2px_10px_rgba(0,0,0,0.05)] rounded-[1.25rem] flex items-center justify-center text-slate-800 font-black text-xl group-hover:from-blue-500 group-hover:to-indigo-600 group-hover:text-white group-hover:border-blue-400 group-hover:shadow-[0_4px_15px_rgba(59,130,246,0.3)] transition-all duration-500">
-                                                {visit.patientName?.[0] || 'P'}
+                                    <div className="relative group">
+                                        <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-[2rem] opacity-0 group-hover:opacity-10 transition-opacity duration-300 blur-sm" />
+                                        <GlassCard 
+                                            onClick={() => navigate(`/patients/${visit.patientId}/cases/${visit.caseId}`)}
+                                            className="relative flex items-center justify-between !p-5 hover:border-blue-300/50 transition-all cursor-pointer group shadow-sm bg-white/60"
+                                        >
+                                            <div className="flex items-center gap-4">
+                                                <div className="relative">
+                                                    <div className="w-14 h-14 bg-slate-900 rounded-2xl flex items-center justify-center text-white font-black text-xl group-hover:bg-blue-600 transition-colors duration-500">
+                                                        {visit.patientName?.[0] || 'P'}
+                                                    </div>
+                                                    {visit.paymentStatus === 'Paid' && (
+                                                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center">
+                                                            <CheckCircle size={10} className="text-white" />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="space-y-0.5">
+                                                    <h4 className="font-black text-slate-900 group-hover:text-blue-700 transition-colors text-base tracking-tight leading-none italic uppercase">{visit.patientName || 'Patient'}</h4>
+                                                    <p className="text-[9px] font-black text-indigo-500/80 uppercase tracking-widest leading-none pt-1">{visit.diagnosis || 'Therapy Index'}</p>
+                                                    <p className="text-[8px] text-slate-400 font-medium truncate max-w-[140px] mt-1">{visit.treatmentDone || 'Session record'}</p>
+                                                </div>
                                             </div>
-                                            <div className="space-y-1">
-                                                <h4 className="font-bold text-slate-900 group-hover:text-blue-700 transition-colors text-base tracking-tight leading-none italic">{visit.patientName || 'Patient'}</h4>
-                                                <p className="text-[9px] font-black text-blue-500/80 uppercase tracking-widest leading-none pt-1">{visit.diagnosis || 'Therapy Session'}</p>
+                                            <div className="text-right flex flex-col items-end gap-1.5">
+                                                <p className="text-sm font-black text-slate-900 font-mono italic">{formatCurrency(visit.amountPaid)}</p>
+                                                {visit.treatmentDone?.startsWith('Scheduled:') ? (
+                                                    <button 
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setCompletionData({ paymentStatus: 'Paid', amountPaid: 500 });
+                                                            setCompletingVisit(visit);
+                                                        }}
+                                                        className="text-[8px] font-black uppercase tracking-widest text-white bg-slate-900 px-3 py-1.5 rounded-xl active:scale-95 transition-all shadow-md hover:bg-blue-600"
+                                                    >
+                                                        End Visit
+                                                    </button>
+                                                ) : (
+                                                    <Badge variant="success" className="text-[8px] px-2 py-0.5 font-black uppercase tracking-widest transform scale-90 origin-right">
+                                                        COMPLETED
+                                                    </Badge>
+                                                )}
                                             </div>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="text-sm font-black text-slate-900 mb-1.5 font-mono">{formatCurrency(visit.amountPaid)}</p>
-                                            <Badge variant={visit.paymentStatus === 'Paid' ? 'success' : 'warning'} className="text-[8px] px-1.5 py-0 mb-2 block w-fit ml-auto shadow-none">
-                                                {visit.paymentStatus}
-                                            </Badge>
-                                            {visit.treatmentDone?.startsWith('Scheduled:') && (
-                                                <button 
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setCompletionData({ paymentStatus: 'Paid', amountPaid: 500 });
-                                                        setCompletingVisit(visit);
-                                                    }}
-                                                    className="text-[9px] font-black uppercase tracking-widest text-white bg-blue-600 px-4 py-2 rounded-xl active:scale-95 transition-transform shadow-[0_2px_8px_rgba(37,99,235,0.3)] cursor-pointer hover:bg-blue-700"
-                                                >
-                                                    Complete
-                                                </button>
-                                            )}
-                                        </div>
-                                    </GlassCard>
+                                        </GlassCard>
+                                    </div>
                                 </motion.div>
                             ))}
                         </AnimatePresence>

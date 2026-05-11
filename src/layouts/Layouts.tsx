@@ -19,46 +19,40 @@ const BottomNav = () => {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center pointer-events-none pb-safe">
-      <nav className="flex items-center justify-around pointer-events-auto bg-white border-t border-indigo-100 shadow-[0_-10px_30px_-10px_rgba(0,0,0,0.05)] w-full max-w-md px-2 h-14">
+    <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-t border-slate-100 pb-safe">
+      <nav className="flex items-center justify-around w-full max-w-md mx-auto px-2 h-16">
         {navItems.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
             className={({ isActive }) => 
               cn(
-                "flex flex-col items-center justify-center transition-all relative group flex-1 h-full rounded-2xl",
-                isActive ? "text-indigo-600" : "text-slate-400 hover:text-slate-600 hover:bg-slate-50/50"
+                "flex flex-col items-center justify-center transition-all relative group flex-1 h-full",
+                isActive ? "text-indigo-600" : "text-slate-400 hover:text-slate-600"
               )
             }
           >
             {({ isActive }) => (
               <>
                 <motion.div
-                  animate={isActive ? { y: -2, scale: 1.05 } : { y: 0, scale: 1 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  animate={isActive ? { y: -2, scale: 1.1 } : { y: 0, scale: 1 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
                   className="relative z-10"
                 >
-                  <item.icon size={20} strokeWidth={isActive ? 2.5 : 2} />
+                  <item.icon size={22} strokeWidth={isActive ? 2.5 : 2} />
                 </motion.div>
                 
-                <AnimatePresence>
-                  {isActive && (
-                    <motion.div 
-                      layoutId="nav-pill"
-                      className="absolute inset-x-3 inset-y-1.5 bg-indigo-50 rounded-xl -z-10"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                    />
-                  )}
-                </AnimatePresence>
+                <span className={cn(
+                  "text-[9px] font-bold tracking-tight mt-1 transition-all duration-300",
+                  isActive ? "opacity-100 scale-100" : "opacity-0 scale-90 h-0 overflow-hidden"
+                )}>
+                  {item.label}
+                </span>
 
                 {isActive && (
                   <motion.div 
                     layoutId="nav-indicator"
-                    className="absolute bottom-1 w-1 h-1 bg-indigo-600 rounded-full shadow-[0_0_8px_rgba(79,70,229,0.5)]"
+                    className="absolute top-0 w-8 h-1 bg-indigo-600 rounded-b-full shadow-[0_0_10px_rgba(79,70,229,0.3)]"
                     transition={{ type: "spring", stiffness: 300, damping: 25 }}
                   />
                 )}
@@ -119,49 +113,35 @@ const Header = () => {
 
     return (
         <header className={cn(
-            "fixed top-0 left-0 right-0 z-50 px-5 py-3 flex items-center justify-between gap-3 pt-[calc(0.75rem+env(safe-area-inset-top))] transition-all duration-300 max-w-md mx-auto bg-white border-b",
-            scrolled ? "shadow-lg border-indigo-100 rounded-b-3xl" : "border-indigo-100"
+            "fixed top-0 left-0 right-0 z-50 px-4 py-4 flex items-center justify-between gap-3 pt-[calc(1rem+env(safe-area-inset-top))] transition-all duration-300 max-w-md mx-auto bg-white/80 backdrop-blur-xl border-b",
+            scrolled ? "shadow-sm border-slate-100" : "border-transparent"
         )}>
             <div className="flex flex-col flex-shrink-0">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">{getTimeGreeting()}</span>
-              <h1 className="text-sm font-black text-slate-900 tracking-tight leading-none mt-1 max-w-[120px] truncate">
-                {user?.name ? (
-                  <>
-                    {user.name.split(' ').slice(0, -1).join(' ')} <span className="text-indigo-600">{user.name.split(' ').slice(-1)}</span>
-                  </>
-                ) : (
-                  <>
-                    Trishnamoni <span className="text-indigo-600">Haloi</span>
-                  </>
-                )}
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-1">PhysioTrack</span>
+              <h1 className="text-sm font-black text-slate-900 tracking-tight leading-none truncate max-w-[100px]">
+                {user?.name?.split(' ')[0] || 'Trishnamoni'}
               </h1>
             </div>
             
-            <div className="relative w-full max-w-[220px]">
-              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none transition-colors">
+            <div className="relative flex-1 max-w-[180px]">
+              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
                 <Search size={14} className={cn("transition-colors", isSearchFocused ? "text-indigo-500" : "text-slate-400")} />
               </div>
               <input
                 type="text"
-                placeholder="Search patients..."
+                placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => setIsSearchFocused(true)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Escape') {
-                    setIsSearchFocused(false);
-                    (e.target as HTMLInputElement).blur();
-                  }
-                }}
                 className={cn(
-                  "w-full h-9 bg-slate-50 border border-slate-200/60 rounded-xl pl-9 pr-8 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none transition-all duration-200",
-                  isSearchFocused ? "bg-white border-indigo-200 shadow-[0_0_0_4px_rgba(79,70,229,0.06)] ring-0 max-w-[240px]" : "shadow-sm"
+                  "w-full h-9 bg-slate-100/50 border border-transparent rounded-xl pl-9 pr-4 text-[11px] font-bold text-slate-900 placeholder:text-slate-400 focus:outline-none transition-all duration-200 focus:bg-white focus:border-indigo-200",
+                  isSearchFocused && "shadow-lg shadow-indigo-500/5"
                 )}
               />
               {searchQuery && (
                 <button 
                   onClick={clearSearch}
-                  className="absolute inset-y-0 right-2 flex items-center text-slate-300 hover:text-slate-500 transition-colors"
+                  className="absolute inset-y-0 right-2 flex items-center text-slate-300 hover:text-slate-500"
                 >
                   <X size={12} />
                 </button>
@@ -269,19 +249,19 @@ export const AppLayout: React.FC = () => {
     }
 
     return (
-        <div className="min-h-screen bg-indigo-50/80">
+        <div className="min-h-screen bg-[#F8FAFC]">
             <Header />
             <main className={cn(
-                "max-w-md mx-auto px-5 px-safe pb-40 pt-24 transition-all duration-300",
-                isSearchFocused ? "opacity-60 pointer-events-none" : "opacity-100"
+                "max-w-md mx-auto px-4 px-safe pb-32 pt-28 transition-all duration-300",
+                isSearchFocused ? "opacity-60 pointer-events-none blur-sm" : "opacity-100"
             )}>
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={location.pathname}
-                        initial={{ opacity: 0, y: 15, scale: 0.98 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -15, scale: 0.98 }}
-                        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                        initial={{ opacity: 0, scale: 0.98 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.98 }}
+                        transition={{ duration: 0.3 }}
                     >
                         <Outlet />
                     </motion.div>

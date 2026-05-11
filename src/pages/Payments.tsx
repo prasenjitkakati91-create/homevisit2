@@ -94,7 +94,7 @@ export const Payments = () => {
     });
 
     return (
-        <div className="space-y-10 pb-32">
+        <div className="space-y-10 pb-6">
             {/* Header */}
             <div className="flex items-center justify-between px-1">
                 <div className="space-y-1.5">

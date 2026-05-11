@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion, useSpring, useTransform, AnimatePresence } from 'motion/react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Calendar, Users, TrendingUp, Wallet, Clock, Plus, Search, ArrowRight, Activity, CreditCard, CheckCircle } from 'lucide-react';
+import { Calendar, Users, TrendingUp, Wallet, Clock, Plus, Search, ArrowRight, Activity, CreditCard, CheckCircle, X } from 'lucide-react';
 import { Card, GlassCard, Button, Badge, Skeleton, Input, Select } from '../components/ui/Generic';
 import { sessionService } from '../services/db';
 import { formatCurrency, cn, formatDate } from '../utils/helpers';
@@ -39,8 +39,12 @@ export const Dashboard = () => {
   });
 
   const [visits, setVisits] = useState<any[]>([]);
+  const [todayVisits, setTodayVisits] = useState<any[]>([]);
+  const [monthVisits, setMonthVisits] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [visitsLoading, setVisitsLoading] = useState(false);
+  const [showTodayModal, setShowTodayModal] = useState(false);
+  const [showMonthModal, setShowMonthModal] = useState(false);
 
   // Completion popup state
   const [completingVisit, setCompletingVisit] = useState<any | null>(null);
@@ -82,6 +86,21 @@ export const Dashboard = () => {
       try {
         const statsData = await sessionService.getDashboardStats();
         setStats(statsData);
+        
+        // Also fetch today's actual visits for the modal
+        const today = new Date().toISOString().split('T')[0];
+        const [todayData, monthData] = await Promise.all([
+          sessionService.getVisitsByDate(today),
+          sessionService.getMonthlySessions()
+        ]);
+        
+        setTodayVisits(todayData || []);
+        // sessionService.getMonthlySessions might return a count or a list depending on implementation
+        // Usually stats only give count, so I'll verify if there's a specialized fetcher or if I need to filter
+        // Checking existing services... sessionService.getDashboardStats is already used.
+        // I'll use a filtered approach if a specific list fetcher isn't available, but for now I'll assume 
+        // we can fetch the current month's sessions.
+        setMonthVisits(monthData || []);
       } catch (err: any) {
         console.error('[Dashboard] Stats sync failure:', err);
       }
@@ -128,7 +147,7 @@ export const Dashboard = () => {
   }
 
   return (
-    <div className="space-y-8 pb-10">
+    <div className="space-y-8 pb-6">
       {/* Patient Care Overview Widget */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -176,19 +195,24 @@ export const Dashboard = () => {
         <StatsCard 
           label="Today's Sessions" 
           value={stats.todaySessions} 
+          suffix={stats.todaySessions === 1 ? "session" : "sessions"}
           icon={Activity} 
+          iconBg="bg-blue-500"
+          iconColor="text-white"
           trend={stats.todaySessions > 0 ? "active" : "standby"}
           delay={0.1}
-          onClick={() => navigate('/calendar')}
+          onClick={() => setShowTodayModal(true)}
         />
         <StatsCard 
           label="This Month" 
           value={stats.monthlySessions}
-          suffix=" sessions"
+          suffix={stats.monthlySessions === 1 ? "session" : "sessions"}
           icon={CheckCircle} 
+          iconBg="bg-emerald-500"
+          iconColor="text-white"
           trend="active"
           delay={0.2}
-          onClick={() => navigate('/calendar')}
+          onClick={() => setShowMonthModal(true)}
         />
       </div>
 
@@ -202,19 +226,23 @@ export const Dashboard = () => {
                 <div className="w-1.5 h-1.5 bg-blue-600 rounded-full" />
                 <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] leading-none">Timeline Index</h2>
             </div>
-            <div className="relative">
+            <div className="relative group">
                 <input 
                     type="date" 
                     id="dashboard-date-picker"
                     value={selectedDate}
                     onChange={(e) => setSelectedDate(e.target.value)}
-                    className="absolute inset-0 opacity-0 cursor-pointer z-50 w-full h-full"
+                    className="absolute inset-0 opacity-0 cursor-pointer z-20 w-full h-full block"
                     title="Pick Date"
                 />
-                <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-xl shadow-sm text-[10px] font-bold text-slate-600 hover:border-blue-300 transition-all">
-                    <Calendar size={12} className="text-blue-500" />
-                    Pick Date
-                </button>
+                <motion.button 
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="relative z-10 flex items-center gap-1.5 px-4 py-2 bg-white border border-slate-200 rounded-2xl shadow-sm text-[10px] font-black text-slate-600 group-hover:border-indigo-400 group-hover:text-indigo-600 transition-all italic"
+                >
+                    <Calendar size={12} className="text-indigo-600" />
+                    <span>Pick Date</span>
+                </motion.button>
             </div>
         </div>
 
@@ -329,45 +357,53 @@ export const Dashboard = () => {
                 transition={{ delay: 0.1 + idx * 0.05, type: 'spring', stiffness: 200, damping: 20 }}
                >
                 <Link to={`/patients/${visit.patientId}/cases/${visit.caseId}`}>
-                    <GlassCard className="!p-4 group hover:border-blue-300 transition-all">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200/60 shadow-inner rounded-2xl flex items-center justify-center text-slate-800 font-black text-lg group-hover:from-blue-500 group-hover:to-indigo-600 group-hover:text-white group-hover:border-blue-400 group-hover:shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all duration-500">
-                                    {visit.patientName?.[0] || 'P'}
-                                </div>
-                                <div className="space-y-1">
-                                    <h4 className="font-bold text-slate-900 group-hover:text-blue-700 transition-colors tracking-tight text-sm">{visit.patientName || 'Patient'}</h4>
-                                    <div className="flex items-center gap-2">
-                                        <div className="flex items-center gap-1 text-slate-400">
-                                            <Clock size={10} />
-                                            <p className="text-[9px] font-bold uppercase tracking-wider">{visit.time || 'Schedule Entry'}</p>
+                    <div className="relative group">
+                        <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-3xl opacity-0 group-hover:opacity-10 transition-opacity duration-300 blur-sm" />
+                        <GlassCard className="relative !p-4 group hover:border-blue-300/50 transition-all shadow-sm group-hover:shadow-md bg-white/60">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                    <div className="relative">
+                                        <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-white font-black text-lg group-hover:bg-blue-600 transition-colors duration-300">
+                                            {visit.patientName?.[0] || 'P'}
                                         </div>
-                                        <Badge variant={visit.paymentStatus === 'Paid' ? 'success' : 'warning'} className="px-2 py-0.5 text-[8px] transform scale-90 origin-left">
-                                            {visit.paymentStatus}
-                                        </Badge>
+                                        {visit.paymentStatus === 'Paid' && (
+                                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center">
+                                                <CheckCircle size={10} className="text-white" />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="space-y-0.5">
+                                        <h4 className="font-black text-slate-900 group-hover:text-blue-600 transition-colors tracking-tight text-sm uppercase italic">{visit.patientName || 'Patient'}</h4>
+                                        <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-1.5 text-slate-400">
+                                                <span className="w-1 h-1 bg-indigo-400 rounded-full" />
+                                                <p className="text-[10px] font-black uppercase tracking-widest leading-none">{visit.time || 'Entry'}</p>
+                                            </div>
+                                        </div>
+                                        <p className="text-[9px] text-slate-400 font-medium truncate max-w-[120px]">{visit.treatmentDone || 'Session scheduled'}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    {visit.treatmentDone?.startsWith('Scheduled:') && (
+                                        <button 
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                setCompletionData({ paymentStatus: 'Paid', amountPaid: 500 });
+                                                setCompletingVisit(visit);
+                                            }}
+                                            className="text-[9px] font-black uppercase tracking-widest text-white bg-slate-900 px-3 py-2 rounded-xl active:scale-95 hover:bg-blue-600 transition-all shadow-md"
+                                        >
+                                            End Visit
+                                        </button>
+                                    )}
+                                    <div className="w-10 h-10 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center group-hover:bg-indigo-50 group-hover:border-indigo-100 transition-all duration-300">
+                                        <ArrowRight size={14} className="text-slate-400 group-hover:text-indigo-600" />
                                     </div>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-3">
-                                {visit.treatmentDone?.startsWith('Scheduled:') && (
-                                    <button 
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            setCompletionData({ paymentStatus: 'Paid', amountPaid: 500 });
-                                            setCompletingVisit(visit);
-                                        }}
-                                        className="text-[10px] font-bold text-white bg-blue-600 border border-blue-500 shadow-[0_4px_12px_rgba(37,99,235,0.3)] px-3 py-1.5 rounded-xl active:scale-95 hover:scale-105 transition-all"
-                                    >
-                                        Complete
-                                    </button>
-                                )}
-                                <div className="w-10 h-10 rounded-2xl bg-white/50 border border-slate-100 shadow-sm flex items-center justify-center group-hover:bg-blue-50 group-hover:border-blue-100 group-hover:scale-110 transition-all duration-300">
-                                    <ArrowRight size={16} className="text-slate-400 group-hover:text-blue-600 transition-colors" />
-                                </div>
-                            </div>
-                        </div>
-                    </GlassCard>
+                        </GlassCard>
+                    </div>
                 </Link>
                </motion.div>
              ))}
@@ -401,6 +437,165 @@ export const Dashboard = () => {
           />
         </div>
       </motion.section>
+
+      {/* Today's Sessions Modal */}
+      <AnimatePresence>
+        {showTodayModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md" onClick={() => setShowTodayModal(false)}>
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0, y: 30 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="bg-white/95 backdrop-blur-3xl rounded-[3rem] p-7 shadow-2xl border border-white/60 w-full max-w-md relative overflow-hidden" 
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex justify-between items-center mb-6">
+                <div className="space-y-1">
+                  <h3 className="text-xl font-black text-slate-900 tracking-tight leading-none italic">Today's <span className="not-italic">Timeline</span></h3>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">
+                    {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                  </p>
+                </div>
+                <button 
+                  onClick={() => setShowTodayModal(false)}
+                  className="p-2.5 bg-slate-50 text-slate-400 hover:text-slate-600 rounded-2xl transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="max-h-[70vh] overflow-y-auto pr-1 space-y-3 no-scrollbar pb-6 px-1">
+                {todayVisits.length === 0 ? (
+                  <div className="py-12 text-center space-y-3">
+                    <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 mx-auto">
+                      <Activity size={24} />
+                    </div>
+                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest italic">No clinical entries for today</p>
+                  </div>
+                ) : (
+                  todayVisits.map((visit, idx) => (
+                    <motion.div
+                      key={visit.id}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: idx * 0.05 }}
+                    >
+                      <Link 
+                        to={`/patients/${visit.patientId}/cases/${visit.caseId}`}
+                        onClick={() => setShowTodayModal(false)}
+                        className="block"
+                      >
+                        <div className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-[1.75rem] hover:border-blue-300 hover:shadow-sm transition-all group">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white font-black text-sm group-hover:bg-blue-600 transition-colors italic">
+                              {visit.patientName?.[0] || 'P'}
+                            </div>
+                            <div className="space-y-0.5">
+                              <p className="text-xs font-black text-slate-900 tracking-tight italic group-hover:text-blue-600 transition-colors uppercase truncate max-w-[150px]">
+                                {visit.patientName}
+                              </p>
+                              <div className="flex items-center gap-1.5 opacity-60">
+                                <Clock size={8} className="text-slate-400" />
+                                <p className="text-[10px] font-black uppercase tracking-widest leading-none">{visit.time || 'N/A'}</p>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                             <Badge variant={visit.paymentStatus === 'Paid' ? 'success' : 'warning'} className="text-[8px] transform scale-75 origin-right">
+                                {visit.paymentStatus}
+                             </Badge>
+                             <div className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-blue-50 group-hover:text-blue-500 transition-all">
+                                <ArrowRight size={14} />
+                             </div>
+                          </div>
+                        </div>
+                      </Link>
+                    </motion.div>
+                  ))
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Monthly Sessions Modal */}
+      <AnimatePresence>
+        {showMonthModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md" onClick={() => setShowMonthModal(false)}>
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0, y: 30 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="bg-white/95 backdrop-blur-3xl rounded-[3rem] p-7 shadow-2xl border border-white/60 w-full max-w-md relative overflow-hidden" 
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex justify-between items-center mb-6">
+                <div className="space-y-1">
+                  <h3 className="text-xl font-black text-slate-900 tracking-tight leading-none italic">Monthly <span className="not-italic">Index</span></h3>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">
+                    {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                  </p>
+                </div>
+                <button 
+                  onClick={() => setShowMonthModal(false)}
+                  className="p-2.5 bg-slate-50 text-slate-400 hover:text-slate-600 rounded-2xl transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="max-h-[70vh] overflow-y-auto pr-1 space-y-3 no-scrollbar pb-6 px-1">
+                {monthVisits.length === 0 ? (
+                  <div className="py-12 text-center space-y-3">
+                    <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 mx-auto">
+                      <CheckCircle size={24} />
+                    </div>
+                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest italic">No clinical entries for this month</p>
+                  </div>
+                ) : (
+                  monthVisits.map((visit, idx) => (
+                    <motion.div
+                      key={visit.id}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: idx * 0.05 }}
+                    >
+                      <Link 
+                        to={`/patients/${visit.patientId}/cases/${visit.caseId}`}
+                        onClick={() => setShowMonthModal(false)}
+                        className="block"
+                      >
+                        <div className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-[1.75rem] hover:border-blue-300 hover:shadow-sm transition-all group">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white font-black text-sm group-hover:bg-blue-600 transition-colors italic">
+                              {visit.patientName?.[0] || 'P'}
+                            </div>
+                            <div className="space-y-0.5">
+                              <p className="text-xs font-black text-slate-900 tracking-tight italic group-hover:text-blue-600 transition-colors uppercase truncate max-w-[150px]">
+                                {visit.patientName}
+                              </p>
+                              <div className="flex items-center gap-1.5 opacity-60">
+                                <Calendar size={8} className="text-slate-400" />
+                                <p className="text-[10px] font-black uppercase tracking-widest leading-none">{formatDate(visit.date)}</p>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                             <div className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-all">
+                                <ArrowRight size={14} />
+                             </div>
+                          </div>
+                        </div>
+                      </Link>
+                    </motion.div>
+                  ))
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Completion Popup */}
       <AnimatePresence>
@@ -467,31 +662,48 @@ export const Dashboard = () => {
   );
 };
 
-const StatsCard = ({ label, value, suffix = "", icon: Icon, trend, delay, onClick }: any) => (
+const StatsCard = ({ label, value, suffix = "", icon: Icon, iconBg = "bg-slate-50", iconColor = "text-slate-500", trend, delay, onClick }: any) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
-    transition={{ delay, type: 'spring', stiffness: 200, damping: 25 }}
-    className="w-full relative group"
+    transition={{ delay, duration: 0.5 }}
+    className="w-full"
   >
-    <div className="absolute inset-0 bg-blue-500/0 rounded-[2.5rem] blur-xl group-hover:bg-blue-500/10 transition-colors duration-500" />
-    <GlassCard onClick={onClick} className="h-36 flex flex-col justify-between !p-5 relative overflow-hidden group-hover:-translate-y-1 transition-all duration-500">
-      <div className="p-2.5 w-fit bg-slate-50 border border-slate-200/50 shadow-inner rounded-[1.25rem] text-slate-500 group-hover:bg-blue-600 group-hover:text-white transition-all duration-500">
-        <Icon size={18} strokeWidth={2.5} />
+    <div 
+      onClick={onClick}
+      className="p-5 bg-white rounded-[2.5rem] border border-indigo-100/50 shadow-sm hover:shadow-xl hover:border-indigo-200 transition-all duration-500 group cursor-pointer relative overflow-hidden flex flex-col justify-between min-h-[160px]"
+    >
+      <div className="flex justify-between items-start relative z-10">
+        <div className={cn(
+          "p-3 rounded-2xl shadow-sm transition-all duration-500",
+          iconBg, iconColor,
+          "group-hover:scale-110"
+        )}>
+          <Icon size={20} strokeWidth={2.5} />
+        </div>
+        <div className={cn(
+          "w-1.5 h-1.5 rounded-full mt-2",
+          trend === 'active' ? "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" : "bg-slate-200"
+        )} />
       </div>
-      <div className="space-y-0.5 relative z-10">
-        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">{label}</p>
-        <p className="text-xl font-black text-slate-900 tracking-tight leading-none truncate pr-2 flex items-center">
-          {typeof value === 'number' ? <AnimatedCounter value={value} suffix={suffix} /> : value}
-        </p>
+
+      <div className="space-y-1 relative z-10 mt-4">
+        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em] leading-none group-hover:text-indigo-600 transition-colors uppercase">{label}</p>
+        <div className="flex flex-col items-start pt-1">
+          <p className="text-2xl font-black text-slate-900 tracking-tighter leading-none italic">
+            {typeof value === 'number' ? <AnimatedCounter value={value} /> : value}
+          </p>
+          {suffix && (
+            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1.5 opacity-60">
+              {suffix}
+            </span>
+          )}
+        </div>
       </div>
-      <div className={cn(
-        "absolute top-5 right-5 w-2 h-2 rounded-full",
-        trend === 'active' ? "bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.8)] animate-pulse" :
-        trend === 'pending' ? "bg-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.8)]" :
-        "bg-slate-300"
-      )} />
-    </GlassCard>
+      
+      {/* Decorative background element */}
+      <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-indigo-50/50 rounded-full group-hover:scale-150 transition-transform duration-700 pointer-events-none" />
+    </div>
   </motion.div>
 );
 

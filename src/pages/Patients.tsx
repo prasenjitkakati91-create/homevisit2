@@ -46,7 +46,7 @@ export const AddPatient = () => {
     };
   
     return (
-      <div className="space-y-8 pb-10">
+      <div className="space-y-8 pb-6">
         <div className="flex items-center gap-4 px-2">
           <button onClick={() => navigate(-1)} className="p-3 bg-white/60 backdrop-blur-xl border border-slate-200/50 rounded-2xl text-slate-400 hover:text-slate-900 transition-all shadow-sm active:scale-95 cursor-pointer">
             <ArrowLeft size={20} strokeWidth={2.5} />
@@ -210,7 +210,7 @@ export const EditPatient = () => {
     );
   
     return (
-      <div className="space-y-8 pb-10">
+      <div className="space-y-8 pb-6">
         <div className="flex items-center gap-4 px-2">
           <button onClick={() => navigate(-1)} className="p-3 bg-white/60 backdrop-blur-xl border border-slate-200/50 rounded-2xl text-slate-400 hover:text-slate-900 transition-all shadow-sm active:scale-95 cursor-pointer">
             <ArrowLeft size={20} strokeWidth={2.5} />
@@ -321,7 +321,7 @@ export const PatientList = () => {
   );
 
   return (
-    <div className="space-y-8 pb-10">
+    <div className="space-y-8 pb-6">
       <div className="flex items-center justify-between px-2">
         <div className="space-y-0.5">
             <p className="text-[9px] font-black text-blue-500 uppercase tracking-widest leading-none mb-1">Central Archive</p>

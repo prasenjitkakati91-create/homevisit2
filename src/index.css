@@ -32,8 +32,7 @@
 
 @layer base {
   html, body {
-    @apply bg-[#F8FAFC] antialiased touch-none overflow-x-hidden h-full;
-    overscroll-behavior-y: none;
+    @apply bg-[#F8FAFC] antialiased overflow-x-hidden;
     -webkit-tap-highlight-color: transparent;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
