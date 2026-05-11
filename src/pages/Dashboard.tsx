@@ -90,8 +90,8 @@ export const Dashboard = () => {
         // Also fetch today's actual visits for the modal
         const today = new Date().toISOString().split('T')[0];
         const [todayData, monthData] = await Promise.all([
-          sessionService.getVisitsByDate(today),
-          sessionService.getMonthlySessions()
+          sessionService.getVisitsByDate(today, true),
+          sessionService.getMonthlySessions(true)
         ]);
         
         setTodayVisits(todayData || []);

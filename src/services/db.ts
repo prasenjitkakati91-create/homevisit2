@@ -250,7 +250,7 @@ export const sessionService = {
     }
   },
 
-  async getVisitsByDate(date: string) {
+  async getVisitsByDate(date: string, onlyCompleted: boolean = false) {
     try {
       const q = query(
         collectionGroup(db, 'sessions'),
@@ -259,7 +259,14 @@ export const sessionService = {
       const snapshot = await getDocs(q);
       return snapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() } as any))
-        .filter(s => s.date === date)
+        .filter(s => {
+           const matchDate = s.date === date;
+           if (!matchDate) return false;
+           if (onlyCompleted) {
+             return !s.treatmentDone || !s.treatmentDone.startsWith('Scheduled:');
+           }
+           return true;
+        })
         .sort((a, b) => a.date.localeCompare(b.date));
     } catch (e) {
       console.error(e);
@@ -267,7 +274,7 @@ export const sessionService = {
     }
   },
 
-  async getTodayVisits() {
+  async getTodayVisits(onlyCompleted: boolean = false) {
     try {
       const q = query(
         collectionGroup(db, 'sessions'),
@@ -277,7 +284,14 @@ export const sessionService = {
       const today = new Date().toISOString().split('T')[0];
       return snapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() } as any))
-        .filter(s => s.date === today)
+        .filter(s => {
+          const matchDate = s.date === today;
+          if (!matchDate) return false;
+          if (onlyCompleted) {
+            return !s.treatmentDone || !s.treatmentDone.startsWith('Scheduled:');
+          }
+          return true;
+        })
         .sort((a, b) => a.date.localeCompare(b.date));
     } catch (e) {
       console.error(e);
@@ -285,7 +299,7 @@ export const sessionService = {
     }
   },
 
-  async getMonthlySessions() {
+  async getMonthlySessions(onlyCompleted: boolean = false) {
     try {
       const q = query(
         collectionGroup(db, 'sessions'),
@@ -295,7 +309,14 @@ export const sessionService = {
       const currentMonth = new Date().toISOString().substring(0, 7); // YYYY-MM
       return snapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() } as any))
-        .filter(s => s.date && s.date.startsWith(currentMonth))
+        .filter(s => {
+          const matchMonth = s.date && s.date.startsWith(currentMonth);
+          if (!matchMonth) return false;
+          if (onlyCompleted) {
+            return !s.treatmentDone || !s.treatmentDone.startsWith('Scheduled:');
+          }
+          return true;
+        })
         .sort((a, b) => b.date.localeCompare(a.date));
     } catch (e) {
       console.error(e);
@@ -359,14 +380,16 @@ export const sessionService = {
 
       sessionsSnapshot.docs.forEach(doc => {
         const data = doc.data();
+        const isCompleted = !data.treatmentDone || !data.treatmentDone.startsWith('Scheduled:');
+        
         totalEarnings += data.amountPaid || 0;
         if (data.paymentStatus === 'Pending') {
           pendingPayments += (data.sessionFee || 500); // fallback fee
         }
-        if (data.date === today) {
+        if (data.date === today && isCompleted) {
           todaySessionsCount++;
         }
-        if (data.date && data.date.startsWith(currentMonth)) {
+        if (data.date && data.date.startsWith(currentMonth) && isCompleted) {
           monthlySessionsCount++;
         }
       });
