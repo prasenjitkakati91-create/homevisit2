@@ -3,7 +3,7 @@ import { Upload, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Skeleton } from '../ui/Generic';
 import { uploadService } from '../../services/uploadService';
-import { cn } from '../../utils/helpers';
+import { cn, compressImage } from '../../utils/helpers';
 import { useAuth } from '../../context/AuthContext';
 import { auth } from '../../firebase/config';
 import { toast } from 'sonner';
@@ -18,98 +18,80 @@ export const MedicalRecordUpload: React.FC<MedicalRecordUploadProps> = ({ patien
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [dragActive, setDragActive] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleUpload = async (file: File) => {
     if (!file) return;
+    setError(null);
 
     if (!user) {
-      toast.error('Clinical session not initialized. Please wait.', { id: 'upload-status' });
+      toast.error('Session not initialized');
       return;
     }
-
-    if (!patientId) {
-      toast.error('Patient context lost. Please refresh clinical dashboard.', { id: 'upload-status' });
-      return;
-    }
-
-    // Diagnostic Logging
-    console.log('[MedicalRecordUpload] User Context:', {
-      uid: user?.uid,
-      isAnonymous: user?.isAnonymous,
-      isMock: user?.isMock,
-      authUid: auth.currentUser?.uid
-    });
-    console.log('[MedicalRecordUpload] Data Trace:', {
-      fileName: file.name,
-      fileSize: file.size,
-      fileType: file.type,
-      isBlob: file instanceof Blob,
-      isFile: file instanceof File
-    });
 
     try {
-      console.log(`[MedicalRecordUpload] Initiating vault transfer: ${file.name}`);
       setIsUploading(true);
       setProgress(0);
       
-      const toastId = toast.loading(`Archiving ${file.name}... 0%`, { id: 'upload-status' });
+      const prepareToast = toast.loading(`Preparing ${file.name}...`, { id: 'upload-status' });
+
+      // Compression logic
+      let fileToUpload = file;
+      if (file.type.startsWith('image/')) {
+        try {
+          fileToUpload = await compressImage(file);
+        } catch (e) {
+          console.warn('Compression skipped', e);
+        }
+      }
       
-      await uploadService.uploadFile(patientId, file, (p) => {
-        setProgress(p);
-        toast.loading(`Archiving ${file.name}... ${Math.round(p)}%`, { id: 'upload-status' });
+      toast.loading(`Archiving ${fileToUpload.name}... 0%`, { id: 'upload-status' });
+      
+      await uploadService.uploadFile(patientId, fileToUpload, (p) => {
+        const roundedProgress = Math.round(p);
+        setProgress(roundedProgress);
+        // Throttle toast updates to avoid UI lag
+        if (roundedProgress % 5 === 0 || roundedProgress === 100) {
+          toast.loading(`Archiving ${fileToUpload.name}... ${roundedProgress}%`, { id: 'upload-status' });
+        }
       });
       
-      console.log('[MedicalRecordUpload] Archive verified');
-      toast.success('Document secured in clinical vault', { id: 'upload-status' });
+      toast.success('Document archived successfully', { id: 'upload-status' });
       if (onSuccess) onSuccess();
     } catch (err: any) {
-      console.error('[MedicalRecordUpload] Synchronization failure:', err);
-      toast.error(err.message || 'Archive synchronization failed', { id: 'upload-status' });
+      console.error('[MedicalRecordUpload] Error:', err);
+      const msg = err.message || 'Transmission failure';
+      setError(msg);
+      toast.error(msg, { id: 'upload-status' });
     } finally {
       setIsUploading(false);
-      setProgress(0);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
-  if (authLoading) return (
-    <div className="h-40 bg-white border-2 border-dashed border-slate-100 rounded-[2.5rem] flex flex-col items-center justify-center p-8 space-y-4">
-        <Skeleton className="w-16 h-16 rounded-3xl" />
-        <div className="space-y-2 w-full flex flex-col items-center">
-            <Skeleton className="h-3 w-32" />
-            <Skeleton className="h-2 w-48" />
-        </div>
-    </div>
-  );
-
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.[0]) {
-      handleUpload(e.target.files[0]);
-    }
+    if (e.target.files?.[0]) handleUpload(e.target.files[0]);
   };
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setDragActive(true);
-    } else if (e.type === 'dragleave') {
-      setDragActive(false);
-    }
+    if (e.type === 'dragenter' || e.type === 'dragover') setDragActive(true);
+    else if (e.type === 'dragleave') setDragActive(false);
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    if (e.dataTransfer.files?.[0]) {
-      handleUpload(e.dataTransfer.files[0]);
-    }
+    if (e.dataTransfer.files?.[0]) handleUpload(e.dataTransfer.files[0]);
   };
 
+  if (authLoading) return <Skeleton className="h-48 w-full rounded-[2rem]" />;
+
   return (
-    <div className="w-full">
+    <div className="w-full space-y-4">
       <input
         type="file"
         ref={fileInputRef}
@@ -119,85 +101,94 @@ export const MedicalRecordUpload: React.FC<MedicalRecordUploadProps> = ({ patien
         disabled={isUploading}
       />
 
-      <div
+      <motion.div
+        layout
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
         onDragOver={handleDrag}
         onDrop={handleDrop}
         onClick={() => !isUploading && fileInputRef.current?.click()}
         className={cn(
-          "relative border-2 border-dashed rounded-[2.5rem] p-8 transition-all cursor-pointer overflow-hidden",
-          dragActive ? "border-blue-500 bg-blue-50/50" : "border-slate-100 hover:border-slate-200 bg-white",
-          isUploading && "pointer-events-none opacity-80"
+          "relative min-h-[160px] border-2 border-dashed rounded-[2.5rem] p-8 transition-all duration-300 flex flex-col items-center justify-center text-center group",
+          dragActive ? "border-blue-500 bg-blue-50/50 scale-[0.99] shadow-inner" : "border-slate-100 hover:border-blue-200 bg-white hover:shadow-xl hover:shadow-blue-500/5",
+          isUploading ? "cursor-wait" : "cursor-pointer",
+          error && !isUploading && "border-red-100 bg-red-50/30"
         )}
       >
         <AnimatePresence mode="wait">
-          {!isUploading ? (
+          {isUploading ? (
             <motion.div
-              key="idle"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="flex flex-col items-center justify-center text-center space-y-4"
+              key="uploading"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-xs space-y-6"
             >
-              <div className="w-16 h-16 bg-slate-50 rounded-3xl flex items-center justify-center text-slate-400 group-hover:text-blue-500 transition-colors">
-                <Upload size={28} />
+              <div className="relative mx-auto w-16 h-16">
+                <div className="absolute inset-0 bg-blue-100 rounded-full animate-pulse opacity-50" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                </div>
+                <div className="absolute inset-0 flex items-center justify-center text-blue-700">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                </div>
               </div>
-              <div className="space-y-1">
-                <p className="text-slate-900 font-bold">Archive Medical Records</p>
-                <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] leading-none">PDF, JPG, PNG • MAX 10MB</p>
+              
+              <div className="space-y-2">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest animate-pulse">
+                  Synchronizing with Vault...
+                </p>
               </div>
             </motion.div>
           ) : (
             <motion.div
-              key="uploading"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex flex-col items-center justify-center space-y-6 py-4"
+              key="idle"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-4"
             >
-              <div className="relative w-20 h-20">
-                <svg className="w-full h-full transform -rotate-90">
-                  <circle
-                    cx="40"
-                    cy="40"
-                    r="34"
-                    stroke="currentColor"
-                    strokeWidth="6"
-                    fill="transparent"
-                    className="text-slate-100"
-                  />
-                  <circle
-                    cx="40"
-                    cy="40"
-                    r="34"
-                    stroke="currentColor"
-                    strokeWidth="6"
-                    fill="transparent"
-                    strokeDasharray={2 * Math.PI * 34}
-                    strokeDashoffset={2 * Math.PI * 34 * (1 - progress / 100)}
-                    className="text-blue-600 transition-all duration-300 stroke-round"
-                  />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center text-blue-600">
-                  <Loader2 className="w-6 h-6 animate-spin" />
-                </div>
+              <div className={cn(
+                "w-16 h-16 mx-auto rounded-3xl flex items-center justify-center transition-all duration-300",
+                error ? "bg-red-50 text-red-400" : "bg-slate-50 text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500 group-hover:scale-110 group-hover:rotate-6"
+              )}>
+                <Upload size={28} />
               </div>
               
-              <div className="text-center space-y-3">
-                <p className="text-slate-900 font-black uppercase tracking-[0.2em] text-[10px]">
-                  Archiving... {Math.round(progress)}%
+              <div className="space-y-1">
+                <h4 className="text-slate-900 font-bold">
+                  {error ? 'Upload Failed' : 'Add Medical Records'}
+                </h4>
+                <p className={cn(
+                  "text-[10px] font-black uppercase tracking-[0.2em] leading-none",
+                  error ? "text-red-400" : "text-slate-400"
+                )}>
+                  {error ? error : 'PDF, JPG, PNG • MAX 10MB'}
                 </p>
-                <div className="w-48 h-1 bg-slate-100 rounded-full overflow-hidden mx-auto">
-                  <div 
-                    className="h-full bg-blue-600 transition-all duration-300 rounded-full" 
-                    style={{ width: `${progress}%` }} 
-                  />
-                </div>
               </div>
+
+              {!error && (
+                <div className="pt-2">
+                  <span className="px-3 py-1 bg-slate-50 rounded-full text-[10px] font-bold text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                    Click to browse
+                  </span>
+                </div>
+              )}
+              
+              {error && (
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setError(null);
+                  }}
+                  className="text-[10px] font-bold text-red-500 hover:underline underline-offset-4"
+                >
+                  Clear error and try again
+                </button>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
+      </motion.div>
     </div>
   );
 };

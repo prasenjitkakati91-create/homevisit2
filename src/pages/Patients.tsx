@@ -4,7 +4,7 @@ import { Badge, Card, Button, Input, Select, Textarea, GlassCard, Skeleton } fro
 import { patientService } from '../services/db';
 import { ArrowLeft, UserPlus, Search as SearchIcon, Phone, Users, ChevronRight, Activity } from 'lucide-react';
 import { toast } from 'sonner';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 
 export const AddPatient = () => {
     const navigate = useNavigate();

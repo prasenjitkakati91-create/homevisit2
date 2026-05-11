@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Calendar, Users, TrendingUp, Wallet, Clock, Plus, Search, ArrowRight, Activity, CreditCard, CheckCircle } from 'lucide-react';
 import { Card, Button, Badge, Skeleton } from '../components/ui/Generic';

@@ -30,8 +30,8 @@ export function formatCurrency(amount: number) {
 
 export async function compressImage(file: File): Promise<File> {
   return new Promise((resolve, reject) => {
-    // Skip compression if not an image or already small (< 1MB)
-    if (!file.type.startsWith('image/') || file.size < 1 * 1024 * 1024) {
+    // Skip compression if not an image
+    if (!file.type.startsWith('image/')) {
       resolve(file);
       return;
     }
@@ -39,7 +39,7 @@ export async function compressImage(file: File): Promise<File> {
     const timeout = setTimeout(() => {
       console.warn('Compression timed out, using original file');
       resolve(file);
-    }, 3000);
+    }, 5000);
 
     const reader = new FileReader();
     reader.onerror = () => {
@@ -56,8 +56,8 @@ export async function compressImage(file: File): Promise<File> {
       img.onload = () => {
         try {
           const canvas = document.createElement('canvas');
-          const MAX_WIDTH = 1600; // Slightly smaller for speed
-          const MAX_HEIGHT = 1600;
+          const MAX_WIDTH = 1200; // Smaller resolution for better size
+          const MAX_HEIGHT = 1200;
           let width = img.width;
           let height = img.height;
 
@@ -81,18 +81,19 @@ export async function compressImage(file: File): Promise<File> {
           canvas.toBlob(
             (blob) => {
               clearTimeout(timeout);
-              if (blob && blob.size < file.size) {
+              if (blob) {
+                // Return the compressed version, we need it as small as possible
                 const compressedFile = new File([blob], file.name, {
                   type: 'image/jpeg',
                   lastModified: Date.now(),
                 });
                 resolve(compressedFile);
               } else {
-                resolve(file); // Keep original if compression didn't help or failed
+                resolve(file); 
               }
             },
             'image/jpeg',
-            0.75 // Slightly lower quality for better speed/size
+            0.6 // Aggressive compression (60% quality)
           );
         } catch (e) {
           clearTimeout(timeout);

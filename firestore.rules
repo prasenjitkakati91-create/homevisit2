@@ -63,7 +63,9 @@ service cloud.firestore {
       // Files
       match /files/{fileId} {
         allow read, list: if true;
-        allow write: if isPhysio(resource.data.physioId || request.resource.data.physioId);
+        allow create: if isPhysio(request.resource.data.physioId);
+        allow update: if isPhysio(resource.data.physioId) && isPhysio(request.resource.data.physioId);
+        allow delete: if isPhysio(resource.data.physioId);
       }
     }
 

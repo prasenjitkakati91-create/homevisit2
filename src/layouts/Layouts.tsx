@@ -3,7 +3,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Home, Users, Calendar, CreditCard, Plus, Bell, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { cn } from '../utils/helpers';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 
 const BottomNav = () => {
