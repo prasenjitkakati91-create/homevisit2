@@ -84,17 +84,29 @@ export const CalendarPage = () => {
                 key={day}
                 onClick={() => setSelectedDate(dateObj)}
                 className={cn(
-                    "h-10 w-full flex flex-col items-center justify-center rounded-[1.25rem] relative transition-all active:scale-90 cursor-pointer overflow-hidden",
-                    isSelected ? "bg-blue-600 text-white shadow-[0_4px_15px_rgba(37,99,235,0.3)]" : 
-                    isToday ? "bg-blue-50/80 text-blue-600 border border-blue-100/50" : "text-slate-600 hover:bg-slate-100/50"
+                    "group h-12 w-full flex flex-col items-center justify-center rounded-[1.25rem] relative transition-all active:scale-95 cursor-pointer overflow-hidden mb-1",
+                    isSelected ? "text-white" : 
+                    isToday ? "bg-blue-50/50 text-blue-600" : "text-slate-600 hover:bg-slate-50"
                 )}
             >
-                {isSelected && <motion.div layoutId="calendar-selection" className="absolute inset-0 bg-gradient-to-br from-blue-500 to-indigo-600" />}
-                <span className={cn("text-xs font-black z-10", isSelected ? "text-white" : "")}>{day}</span>
+                {isSelected && (
+                    <motion.div 
+                        layoutId="calendar-selection" 
+                        className="absolute inset-0 bg-slate-900"
+                        initial={false}
+                        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    />
+                )}
+                <span className={cn(
+                    "text-sm font-black z-10 transition-colors", 
+                    isSelected ? "text-white" : "group-hover:text-slate-900"
+                )}>
+                    {day}
+                </span>
                 {daySessions.length > 0 && (
                     <div className={cn(
-                        "absolute bottom-1.5 w-1 h-1 rounded-full z-10",
-                        isSelected ? "bg-white" : "bg-blue-500 shadow-[0_0_5px_rgba(59,130,246,0.5)]"
+                        "absolute bottom-2 w-1 h-1 rounded-full z-10 transition-all",
+                        isSelected ? "bg-blue-400 scale-125" : "bg-blue-500/40"
                     )} />
                 )}
             </button>
@@ -189,27 +201,27 @@ export const CalendarPage = () => {
             </div>
 
             {/* Calendar Widget */}
-            <GlassCard className="!p-6 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-[40px] pointer-events-none" />
+            <div className="bg-white rounded-[2.5rem] p-6 shadow-xl shadow-indigo-900/5 border border-indigo-100/50 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-[40px] pointer-events-none" />
                 <div className="flex items-center justify-between mb-8 relative z-10">
                     <div className="space-y-0.5">
                         <h3 className="text-xl font-black text-slate-900 leading-none tracking-tight">{monthName}</h3>
                         <p className="text-[10px] font-bold text-blue-500 uppercase tracking-widest">{year}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                        <button onClick={prevMonth} className="w-10 h-10 flex items-center justify-center bg-white border border-slate-100 rounded-[1.25rem] text-slate-400 hover:text-blue-600 transition-colors shadow-sm active:scale-95 cursor-pointer">
+                        <button onClick={prevMonth} className="w-10 h-10 flex items-center justify-center bg-slate-50 border border-slate-100 rounded-[1.25rem] text-slate-400 hover:text-blue-600 transition-colors active:scale-95 cursor-pointer">
                             <ChevronLeft size={18} strokeWidth={2.5} />
                         </button>
-                        <button onClick={nextMonth} className="w-10 h-10 flex items-center justify-center bg-white border border-slate-100 rounded-[1.25rem] text-slate-400 hover:text-blue-600 transition-colors shadow-sm active:scale-95 cursor-pointer">
+                        <button onClick={nextMonth} className="w-10 h-10 flex items-center justify-center bg-slate-50 border border-slate-100 rounded-[1.25rem] text-slate-400 hover:text-blue-600 transition-colors active:scale-95 cursor-pointer">
                             <ChevronRight size={18} strokeWidth={2.5} />
                         </button>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-7 gap-1 mb-2 relative z-10">
-                    {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, idx) => (
+                <div className="grid grid-cols-7 gap-1 mb-3 relative z-10">
+                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, idx) => (
                         <div key={`${day}-${idx}`} className="h-6 flex items-center justify-center">
-                            <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest">{day}</span>
+                            <span className="text-[8px] font-black uppercase text-slate-300 tracking-widest">{day}</span>
                         </div>
                     ))}
                 </div>
@@ -217,12 +229,15 @@ export const CalendarPage = () => {
                 <div className="grid grid-cols-7 gap-1 relative z-10">
                     {days}
                 </div>
-            </GlassCard>
+            </div>
 
             <div className="space-y-4">
-                <div className="flex items-center gap-2 px-1">
-                    <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full shadow-[0_0_8px_rgba(99,102,241,0.5)]" />
-                    <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none">Sessions on {selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</h2>
+                <div className="flex items-center justify-between px-2">
+                    <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full" />
+                        <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none italic">{selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</h2>
+                    </div>
+                    {filteredVisits.length > 0 && <span className="text-[9px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100">{filteredVisits.length} appointments</span>}
                 </div>
 
                 {loading ? (
@@ -230,15 +245,32 @@ export const CalendarPage = () => {
                         {[1, 2].map(i => <div key={i} className="h-24 bg-white/50 backdrop-blur-md rounded-[2rem] skeleton border-none" />)}
                     </div>
                 ) : filteredVisits.length === 0 ? (
-                    <GlassCard className="!p-12 text-center space-y-5 border-dashed border-slate-200">
-                        <div className="w-16 h-16 bg-white/50 rounded-3xl flex items-center justify-center text-slate-300 shadow-sm border border-white mx-auto">
-                            <CalendarIcon size={32} />
+                    <motion.div 
+                        initial={{ opacity: 0, scale: 0.98 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="group relative"
+                    >
+                        <div className="absolute -inset-1 bg-gradient-to-b from-slate-100 to-transparent rounded-[2.5rem] opacity-20" />
+                        <div className="relative flex flex-col items-center justify-center py-14 px-6 rounded-[2.5rem] bg-white border-2 border-dashed border-slate-200/60 overflow-hidden group-hover:border-blue-200 transition-all duration-500">
+                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-500/10 to-transparent" />
+                            
+                            <div className="relative mb-6">
+                                <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 shadow-lg shadow-slate-100/50 border border-slate-100 rotate-3 group-hover:rotate-0 group-hover:scale-110 transition-all duration-500">
+                                    <CalendarIcon size={28} strokeWidth={1.5} />
+                                </div>
+                            </div>
+
+                            <div className="space-y-1.5 text-center">
+                                <h3 className="text-slate-900 font-black text-base tracking-tight italic">Registry <span className="not-italic">Empty</span></h3>
+                                <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] max-w-[180px] leading-relaxed mx-auto">
+                                    No clinical appointments indexed for this specific date.
+                                </p>
+                            </div>
+
+                            {/* Decorative elements */}
+                            <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-blue-100/30 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
                         </div>
-                        <div className="space-y-1">
-                           <p className="text-slate-900 font-bold text-sm tracking-tight text-center">No Clinical Data</p>
-                           <p className="text-slate-400 text-[10px] font-medium uppercase tracking-widest text-center leading-relaxed">No records found<br/>for this specific date</p>
-                        </div>
-                    </GlassCard>
+                    </motion.div>
                 ) : (
                     <div className="space-y-3">
                         <AnimatePresence mode="popLayout">

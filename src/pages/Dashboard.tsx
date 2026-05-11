@@ -197,22 +197,60 @@ export const Dashboard = () => {
         initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
         className="space-y-4"
       >
-        <div className="flex items-center gap-2 px-2">
-            <div className="w-1.5 h-1.5 bg-blue-600 rounded-full" />
-            <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] leading-none">Schedule Filter</h2>
-        </div>
-        <GlassCard className="!p-4 flex items-center justify-between gap-4">
-            <div className="space-y-1">
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Active Date</p>
-                <p className="text-sm font-bold text-slate-900">{formatDate(selectedDate)}</p>
+        <div className="flex items-center justify-between px-2">
+            <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 bg-blue-600 rounded-full" />
+                <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] leading-none">Timeline Index</h2>
             </div>
-            <input 
-                type="date" 
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="bg-white/50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-500/20 shadow-sm transition-all"
-            />
-        </GlassCard>
+            <div className="relative">
+                <input 
+                    type="date" 
+                    id="dashboard-date-picker"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="absolute inset-0 opacity-0 cursor-pointer z-50 w-full h-full"
+                    title="Pick Date"
+                />
+                <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-xl shadow-sm text-[10px] font-bold text-slate-600 hover:border-blue-300 transition-all">
+                    <Calendar size={12} className="text-blue-500" />
+                    Pick Date
+                </button>
+            </div>
+        </div>
+
+        <div className="flex gap-2 overflow-x-auto pb-4 px-1 no-scrollbar -mx-5 px-5">
+            {Array.from({ length: 7 }).map((_, i) => {
+                const d = new Date();
+                d.setDate(d.getDate() - 3 + i);
+                const dateStr = d.toISOString().split('T')[0];
+                const isSelected = dateStr === selectedDate;
+                const isToday = dateStr === new Date().toISOString().split('T')[0];
+                
+                return (
+                    <button
+                        key={i}
+                        onClick={() => setSelectedDate(dateStr)}
+                        className={cn(
+                            "flex-shrink-0 w-14 h-20 rounded-[1.25rem] flex flex-col items-center justify-center gap-1.5 transition-all duration-300",
+                            isSelected 
+                                ? "bg-slate-900 text-white shadow-xl shadow-slate-900/20 scale-105" 
+                                : "bg-white text-slate-500 border border-slate-100 hover:border-blue-200"
+                        )}
+                    >
+                        <span className={cn(
+                            "text-[8px] font-black uppercase tracking-widest",
+                            isSelected ? "text-blue-400" : "text-slate-400"
+                        )}>
+                            {d.toLocaleDateString('en-US', { weekday: 'short' })}
+                        </span>
+                        <span className="text-lg font-black tracking-tighter leading-none">
+                            {d.getDate()}
+                        </span>
+                        {isToday && !isSelected && <div className="w-1 h-1 bg-blue-500 rounded-full mt-0.5" />}
+                    </button>
+                );
+            })}
+        </div>
       </motion.section>
 
       {/* Today's Schedule - Timeline Style */}
@@ -237,16 +275,44 @@ export const Dashboard = () => {
                 ))}
             </div>
         ) : visits.length === 0 ? (
-          <GlassCard className="flex flex-col items-center justify-center py-12 text-center space-y-4 border-dashed">
-            <div className="w-14 h-14 bg-white/50 rounded-2xl flex items-center justify-center text-slate-400 shadow-sm border border-white">
-              <Calendar size={26} />
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="group relative"
+          >
+            <div className="absolute -inset-1 bg-gradient-to-b from-slate-100 to-transparent rounded-[2.5rem] opacity-20" />
+            <div className="relative flex flex-col items-center justify-center py-14 px-6 rounded-[2.5rem] bg-white/40 backdrop-blur-sm border-2 border-dashed border-slate-200/60 overflow-hidden group-hover:border-blue-200 transition-all duration-500">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-500/10 to-transparent" />
+              
+              <div className="relative mb-6">
+                <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-slate-300 shadow-lg shadow-slate-200/50 border border-slate-100 rotate-3 group-hover:rotate-0 group-hover:scale-110 transition-all duration-500">
+                  <Calendar size={28} strokeWidth={1.5} />
+                </div>
+                <div className="absolute -right-2 -bottom-2 w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center text-white text-[10px] font-black border-2 border-white shadow-lg animate-bounce">
+                  0
+                </div>
+              </div>
+
+              <div className="space-y-1.5 text-center mb-6">
+                <h3 className="text-slate-900 font-black text-base tracking-tight italic">Timeline <span className="not-italic">Cleared</span></h3>
+                <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] max-w-[180px] leading-relaxed mx-auto">
+                  Precision rest cycle active. No clinical entries for this index.
+                </p>
+              </div>
+
+              <Button 
+                size="sm" 
+                variant="primary" 
+                onClick={() => navigate('/patients')} 
+                className="rounded-xl shadow-lg shadow-blue-500/20 h-10 px-6 text-[10px] font-black uppercase tracking-widest"
+              >
+                In-take Patient
+              </Button>
+
+              {/* Decorative elements */}
+              <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-blue-100/30 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
-            <div className="space-y-1">
-              <p className="text-slate-900 font-bold text-sm tracking-tight text-center">Schedule Vacant</p>
-              <p className="text-slate-400 text-[10px] font-medium uppercase tracking-[0.1em] text-center">No appointments on this date</p>
-            </div>
-            <Button size="sm" variant="outline" onClick={() => navigate('/patients')} className="mt-2 border-slate-200">Add Session</Button>
-          </GlassCard>
+          </motion.div>
         ) : (
           <div className="space-y-3">
              {visits

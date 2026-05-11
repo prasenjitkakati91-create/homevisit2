@@ -1,11 +1,12 @@
 import React from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Users, Calendar, CreditCard, Plus, Bell, User, Search, X } from 'lucide-react';
+import { Home, Users, Calendar, CreditCard, Plus, Bell, User, Search, X, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSearch } from '../context/SearchContext';
 import { cn } from '../utils/helpers';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
+import { patientService } from '../services/db';
 
 const BottomNav = () => {
   const navigate = useNavigate();
@@ -19,7 +20,7 @@ const BottomNav = () => {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center pointer-events-none pb-safe">
-      <nav className="flex items-center justify-around pointer-events-auto bg-white/90 backdrop-blur-2xl border-t border-indigo-100 shadow-[0_-10px_30px_-10px_rgba(0,0,0,0.05)] w-full max-w-md px-2 h-14">
+      <nav className="flex items-center justify-around pointer-events-auto bg-white border-t border-indigo-100 shadow-[0_-10px_30px_-10px_rgba(0,0,0,0.05)] w-full max-w-md px-2 h-14">
         {navItems.map((item) => (
           <NavLink
             key={item.to}
@@ -71,15 +72,43 @@ const BottomNav = () => {
 };
 
 const Header = () => {
-    const { user, signInWithGoogle, logout } = useAuth();
-    const { searchQuery, setSearchQuery, clearSearch } = useSearch();
+    const { user } = useAuth();
+    const { searchQuery, setSearchQuery, clearSearch, isSearchFocused, setIsSearchFocused } = useSearch();
     const [scrolled, setScrolled] = React.useState(false);
+    const [results, setResults] = React.useState<any[]>([]);
+    const navigate = useNavigate();
     
     React.useEffect(() => {
         const handleScroll = () => setScrolled(window.scrollY > 10);
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
+
+    React.useEffect(() => {
+        if (searchQuery.trim().length > 1) {
+            const searchAll = async () => {
+                try {
+                    const patients = await patientService.getPatients() || [];
+                    const filtered = patients.filter((p: any) => 
+                        p.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                        p.phone?.includes(searchQuery)
+                    );
+                    setResults(filtered.slice(0, 5));
+                } catch (e) {
+                    console.error(e);
+                }
+            };
+            searchAll();
+        } else {
+            setResults([]);
+        }
+    }, [searchQuery]);
+
+    const handleResultClick = (patientId: string) => {
+        navigate(`/patients/${patientId}`);
+        clearSearch();
+        setIsSearchFocused(false);
+    };
 
     const getTimeGreeting = () => {
         const hour = new Date().getHours();
@@ -108,26 +137,95 @@ const Header = () => {
               </h1>
             </div>
             
-            <div className="relative w-full max-w-[200px]">
-              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                <Search size={16} className="text-slate-400" />
+            <div className="relative w-full max-w-[220px]">
+              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none transition-colors">
+                <Search size={14} className={cn("transition-colors", isSearchFocused ? "text-indigo-500" : "text-slate-400")} />
               </div>
               <input
                 type="text"
-                placeholder="Search..."
+                placeholder="Search patients..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-9 bg-slate-50 border border-slate-200/60 rounded-xl pl-9 pr-8 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 transition-all shadow-sm"
+                onFocus={() => setIsSearchFocused(true)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') {
+                    setIsSearchFocused(false);
+                    (e.target as HTMLInputElement).blur();
+                  }
+                }}
+                className={cn(
+                  "w-full h-9 bg-slate-50 border border-slate-200/60 rounded-xl pl-9 pr-8 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none transition-all duration-200",
+                  isSearchFocused ? "bg-white border-indigo-200 shadow-[0_0_0_4px_rgba(79,70,229,0.06)] ring-0 max-w-[240px]" : "shadow-sm"
+                )}
               />
               {searchQuery && (
                 <button 
                   onClick={clearSearch}
-                  className="absolute inset-y-0 right-2 flex items-center text-slate-400 hover:text-slate-600 transition-colors"
+                  className="absolute inset-y-0 right-2 flex items-center text-slate-300 hover:text-slate-500 transition-colors"
                 >
-                  <X size={14} />
+                  <X size={12} />
                 </button>
               )}
+
+              {/* Search Results Dropdown */}
+              <AnimatePresence>
+                {isSearchFocused && (searchQuery.length > 0 || results.length > 0) && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 4, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 4, scale: 0.98 }}
+                    className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-[0_10px_40px_-5px_rgba(0,0,0,0.15)] border border-slate-100 overflow-hidden z-[60] min-w-[260px] -right-4 sm:right-0"
+                  >
+                    <div className="p-1.5">
+                       <div className="px-3 py-2 border-b border-slate-50 mb-1 flex items-center justify-between">
+                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Search Results</span>
+                         <span className="text-[9px] text-slate-300 hidden sm:block">ESC to close</span>
+                       </div>
+                       {results.length > 0 ? (
+                         results.map(patient => (
+                           <button
+                             key={patient.id}
+                             onClick={() => handleResultClick(patient.id)}
+                             className="w-full text-left p-2.5 hover:bg-slate-50 flex items-center gap-3 rounded-xl transition-all group"
+                           >
+                             <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-xs group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                               {patient.name?.[0]?.toUpperCase()}
+                             </div>
+                             <div className="flex-1 overflow-hidden">
+                               <p className="text-xs font-bold text-slate-900 truncate group-hover:text-indigo-600 transition-colors">{patient.name}</p>
+                               <p className="text-[10px] text-slate-400 truncate font-medium">{patient.diagnosis || 'No active diagnosis'}</p>
+                             </div>
+                             <ArrowRight size={12} className="text-slate-200 group-hover:text-indigo-500 group-hover:translate-x-0.5 transition-all opacity-0 group-hover:opacity-100" />
+                           </button>
+                         ))
+                       ) : searchQuery.length > 1 ? (
+                         <div className="p-6 text-center">
+                           <div className="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-2">
+                             <Search size={16} className="text-slate-300" />
+                           </div>
+                           <p className="text-xs text-slate-400 font-medium tracking-tight">No patients found matches "{searchQuery}"</p>
+                         </div>
+                       ) : (
+                         <div className="p-4 text-center">
+                           <p className="text-xs text-slate-400 font-medium tracking-tight uppercase tracking-widest text-[9px]">Type at least 2 characters...</p>
+                         </div>
+                       )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
+            
+            {/* Overlay to close search */}
+            {isSearchFocused && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-40" 
+                onClick={() => setIsSearchFocused(false)} 
+              />
+            )}
         </header>
     );
 };
@@ -135,6 +233,7 @@ const Header = () => {
 export const AppLayout: React.FC = () => {
     const location = useLocation();
     const { loading } = useAuth();
+    const { isSearchFocused } = useSearch();
     
     if (loading) {
         return (
@@ -172,7 +271,10 @@ export const AppLayout: React.FC = () => {
     return (
         <div className="min-h-screen bg-indigo-50/80">
             <Header />
-            <main className="max-w-md mx-auto px-5 px-safe pb-40 pt-24">
+            <main className={cn(
+                "max-w-md mx-auto px-5 px-safe pb-40 pt-24 transition-all duration-300",
+                isSearchFocused ? "opacity-60 pointer-events-none" : "opacity-100"
+            )}>
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={location.pathname}
