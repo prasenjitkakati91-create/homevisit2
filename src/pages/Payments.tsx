@@ -16,17 +16,18 @@ import {
     Calendar,
     Users
 } from 'lucide-react';
-import { Card, Button, Input, Badge } from '../components/ui/Generic';
+import { Card, GlassCard, Button, Input, Badge } from '../components/ui/Generic';
 import { patientService, sessionService } from '../services/db';
 import { formatCurrency, formatDate, cn } from '../utils/helpers';
 import { PhysioInvoice } from '../components/PhysioInvoice';
 import { toast } from 'sonner';
+import { useSearch } from '../context/SearchContext';
 
 export const Payments = () => {
     const navigate = useNavigate();
+    const { searchQuery, setSearchQuery } = useSearch();
     const [stats, setStats] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const [searchQuery, setSearchQuery] = useState('');
     const [patients, setPatients] = useState<any[]>([]);
     const [calculating, setCalculating] = useState(false);
     const [selectedPatient, setSelectedPatient] = useState<any>(null);
@@ -84,90 +85,95 @@ export const Payments = () => {
         : [];
 
     const filteredTransactions = transactions.filter(tx => {
-        if (filter === 'all') return true;
-        return tx.paymentStatus === filter;
+        const matchesSearch = !searchQuery || 
+                             tx.patientName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                             tx.diagnosis?.toLowerCase().includes(searchQuery.toLowerCase());
+        
+        if (filter === 'all') return matchesSearch;
+        return matchesSearch && tx.paymentStatus === filter;
     });
 
     return (
         <div className="space-y-10 pb-32">
             {/* Header */}
             <div className="flex items-center justify-between px-1">
-                <div className="space-y-1">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none">Financial Ledger</p>
-                    <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-none italic font-display">Practice <span className="not-italic text-blue-600">Economy</span></h1>
+                <div className="space-y-1.5">
+                    <p className="text-[9px] font-black text-blue-500 uppercase tracking-widest leading-none">Financial Ledger</p>
+                    <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-none italic font-display">Practice <span className="not-italic text-blue-800">Economy</span></h1>
                 </div>
                 <div className="flex gap-2">
-                    <button className="p-3 bg-white border border-slate-100 rounded-2xl text-slate-400 hover:text-blue-600 active:scale-95 transition-all shadow-sm">
-                        <TrendingUp size={20} />
+                    <button className="w-12 h-12 flex items-center justify-center bg-white/60 backdrop-blur-md border border-slate-200/50 rounded-2xl text-slate-400 hover:text-blue-600 active:scale-95 transition-all shadow-[0_2px_10px_rgba(0,0,0,0.03)] cursor-pointer">
+                        <TrendingUp size={20} strokeWidth={2.5}/>
                     </button>
                 </div>
             </div>
 
             {/* Quick Stats Grid */}
             <div className="grid grid-cols-2 gap-4">
-                <Card 
+                <GlassCard 
                     className={cn(
-                        "p-5 border-white/5 relative overflow-hidden group cursor-pointer transition-all active:scale-95",
-                        filter === 'Paid' ? "bg-emerald-600 ring-4 ring-emerald-500/20" : "bg-slate-950"
+                        "!p-6 relative overflow-hidden group cursor-pointer transition-all active:scale-95",
+                        filter === 'Paid' ? "bg-gradient-to-br from-emerald-500 to-teal-600 border-none shadow-[0_8px_30px_rgba(16,185,129,0.3)]" : ""
                     )}
                     onClick={() => setFilter(filter === 'Paid' ? 'all' : 'Paid')}
                 >
-                    <div className="relative z-10 space-y-3">
+                    <div className="relative z-10 space-y-4">
                         <div className={cn(
-                            "p-2 rounded-xl w-fit transition-colors",
-                            filter === 'Paid' ? "bg-white/20 text-white" : "bg-emerald-500/10 text-emerald-400"
+                            "w-10 h-10 rounded-2xl flex items-center justify-center transition-colors shadow-inner",
+                            filter === 'Paid' ? "bg-white/20 text-white" : "bg-emerald-50 text-emerald-500"
                         )}>
-                            <TrendingUp size={16} />
+                            <TrendingUp size={18} strokeWidth={2.5} />
                         </div>
-                        <div className="space-y-0.5">
-                            <p className={cn("text-[10px] font-bold uppercase tracking-widest", filter === 'Paid' ? "text-white/60" : "text-white/40")}>Revenue</p>
-                            <p className="text-xl font-black text-white font-mono tracking-tighter">
+                        <div className="space-y-1">
+                            <p className={cn("text-[10px] font-black uppercase tracking-widest leading-none", filter === 'Paid' ? "text-emerald-100" : "text-slate-400")}>Revenue</p>
+                            <p className={cn("text-2xl font-black font-mono tracking-tighter leading-none", filter === 'Paid' ? "text-white" : "text-emerald-600")}>
                                 {loading ? '---' : formatCurrency(stats?.monthlyEarnings || 0)}
                             </p>
                         </div>
                     </div>
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 blur-3xl rounded-full" />
-                </Card>
+                    {filter === 'Paid' && <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-2xl rounded-full pointer-events-none" />}
+                </GlassCard>
                 
-                <Card 
+                <GlassCard 
                     className={cn(
-                        "p-5 relative overflow-hidden cursor-pointer transition-all active:scale-95",
-                        filter === 'Pending' ? "bg-amber-500 border-amber-400 ring-4 ring-amber-500/20" : "bg-white border-slate-100"
+                        "!p-6 relative overflow-hidden cursor-pointer transition-all active:scale-95",
+                        filter === 'Pending' ? "bg-gradient-to-br from-amber-400 to-orange-500 border-none shadow-[0_8px_30px_rgba(245,158,11,0.3)]" : ""
                     )}
                     onClick={() => setFilter(filter === 'Pending' ? 'all' : 'Pending')}
                 >
-                    <div className="relative z-10 space-y-3">
+                    <div className="relative z-10 space-y-4">
                         <div className={cn(
-                            "p-2 rounded-xl w-fit transition-colors",
-                            filter === 'Pending' ? "bg-white/20 text-white" : "bg-amber-50 text-amber-600"
+                            "w-10 h-10 rounded-2xl flex items-center justify-center transition-colors shadow-inner",
+                            filter === 'Pending' ? "bg-white/20 text-white" : "bg-amber-50 text-amber-500"
                         )}>
-                            <Clock size={16} />
+                            <Clock size={18} strokeWidth={2.5} />
                         </div>
-                        <div className="space-y-0.5">
-                            <p className={cn("text-[10px] font-bold uppercase tracking-widest", filter === 'Pending' ? "text-white/60" : "text-slate-400")}>Pending</p>
-                            <p className={cn("text-xl font-black font-mono tracking-tighter", filter === 'Pending' ? "text-white" : "text-slate-900")}>
+                        <div className="space-y-1">
+                            <p className={cn("text-[10px] font-black uppercase tracking-widest leading-none", filter === 'Pending' ? "text-amber-100" : "text-slate-400")}>Pending</p>
+                            <p className={cn("text-2xl font-black font-mono tracking-tighter leading-none", filter === 'Pending' ? "text-white" : "text-amber-500")}>
                                 {loading ? '---' : formatCurrency(stats?.pendingPayments || 0)}
                             </p>
                         </div>
                     </div>
-                </Card>
+                    {filter === 'Pending' && <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-2xl rounded-full pointer-events-none" />}
+                </GlassCard>
             </div>
 
             {/* Bill Generation Authority */}
             <section className="space-y-4">
-                <div className="flex items-center gap-2 px-2">
-                    <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-pulse" />
-                    <h2 className="text-xs font-black text-slate-900 uppercase tracking-widest">Billing Terminal</h2>
+                <div className="flex items-center gap-2 px-1">
+                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+                    <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none">Billing Terminal</h2>
                 </div>
 
-                <Card className="p-6 bg-white shadow-xl shadow-slate-100/50 border-slate-200/60 overflow-hidden relative">
+                <GlassCard className="!p-6 overflow-visible relative z-20">
                     <div className="space-y-6 relative z-10">
                         <div className="relative">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                            <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={18} strokeWidth={2.5} />
                             <Input 
                                 label=""
-                                placeholder="Patient lookup (Name or ID)..."
-                                className="pl-12 h-14 bg-slate-50 border-none rounded-2xl focus:ring-4 focus:ring-blue-500/10 transition-all font-bold text-sm"
+                                placeholder="Patient lookup..."
+                                className="pl-14 h-14 bg-white/50 backdrop-blur-sm border-slate-200/50 rounded-2xl focus:ring-4 focus:ring-blue-500/10 transition-all font-bold text-sm shadow-inner"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
@@ -178,9 +184,9 @@ export const Payments = () => {
                                         setSelectedPatient(null);
                                         setDues(null);
                                     }}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-slate-200 text-slate-500 hover:bg-slate-300 p-1 rounded-lg transition-all"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-slate-200/80 hover:bg-slate-300 text-slate-500 p-1.5 rounded-[0.5rem] transition-all cursor-pointer shadow-sm"
                                 >
-                                    <ArrowLeft size={14} className="rotate-90" />
+                                    <ArrowLeft size={16} className="rotate-90" strokeWidth={2.5} />
                                 </button>
                             )}
                         </div>
@@ -192,24 +198,26 @@ export const Payments = () => {
                                     initial={{ opacity: 0, height: 0 }}
                                     animate={{ opacity: 1, height: 'auto' }}
                                     exit={{ opacity: 0, height: 0 }}
-                                    className="space-y-2 border-t border-slate-50 pt-4 overflow-hidden"
+                                    className="space-y-2 pt-2"
                                 >
                                     {filteredPatients.map(p => (
                                         <button
                                             key={p.id}
                                             onClick={() => calculateDues(p)}
-                                            className="w-full flex items-center justify-between p-4 bg-slate-50/50 hover:bg-blue-50 border border-transparent hover:border-blue-100 rounded-2xl transition-all group"
+                                            className="w-full flex items-center justify-between p-4 bg-white/40 hover:bg-white/80 border border-slate-100 hover:border-blue-200/50 rounded-2xl transition-all group shadow-[0_2px_10px_rgba(0,0,0,0.02)] cursor-pointer"
                                         >
                                             <div className="flex items-center gap-4">
-                                                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center font-black text-blue-600 shadow-sm">
+                                                <div className="w-12 h-12 bg-gradient-to-br from-slate-50 to-slate-100 rounded-[1rem] flex items-center justify-center font-black text-blue-600 shadow-sm border border-slate-200/50 group-hover:shadow-[0_4px_15px_rgba(59,130,246,0.15)] group-hover:border-blue-300 transition-all">
                                                     {p.name?.[0]}
                                                 </div>
-                                                <div className="text-left">
-                                                    <p className="text-sm font-black text-slate-900 group-hover:text-blue-700">{p.name}</p>
-                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{p.phone}</p>
+                                                <div className="text-left space-y-0.5">
+                                                    <p className="text-sm font-black text-slate-900 group-hover:text-blue-700 tracking-tight leading-none italic">{p.name}</p>
+                                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none pt-1">{p.phone}</p>
                                                 </div>
                                             </div>
-                                            <ChevronRight size={16} className="text-slate-300 group-hover:text-blue-500" />
+                                            <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
+                                                <ChevronRight size={16} strokeWidth={2.5}/>
+                                            </div>
                                         </button>
                                     ))}
                                 </motion.div>
@@ -220,28 +228,31 @@ export const Payments = () => {
                         <AnimatePresence>
                             {selectedPatient && !calculating && (
                                 <motion.div
-                                    initial={{ opacity: 0, scale: 0.95 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    className="p-6 bg-slate-900 rounded-[2rem] text-white space-y-6 relative overflow-hidden"
+                                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                                    className="p-8 bg-slate-900 rounded-[2rem] text-white space-y-8 relative overflow-hidden shadow-[0_20px_50px_rgba(15,23,42,0.3)] mt-4"
                                 >
+                                    <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/20 blur-[60px] rounded-full pointer-events-none" />
+                                    
                                     <div className="relative z-10 flex justify-between items-start">
-                                        <div className="space-y-1">
-                                            <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.25em]">Practice Account</p>
-                                            <h4 className="text-2xl font-black italic font-display">{selectedPatient.name}</h4>
+                                        <div className="space-y-1.5">
+                                            <p className="text-[9px] font-black text-blue-400 uppercase tracking-widest leading-none">Practice Account</p>
+                                            <h4 className="text-3xl font-black italic font-display tracking-tight leading-none">{selectedPatient.name}</h4>
                                         </div>
-                                        <div className="p-3 bg-white/10 rounded-2xl backdrop-blur-md">
-                                            <Wallet size={20} className="text-blue-400" />
+                                        <div className="w-12 h-12 flex items-center justify-center bg-white/10 rounded-[1.25rem] border border-white/10 shadow-inner backdrop-blur-md">
+                                            <Wallet size={20} className="text-blue-400" strokeWidth={2.5} />
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-4 pb-2">
-                                        <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
-                                            <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em] mb-1">Open Invoices</p>
-                                            <p className="text-2xl font-black font-mono">{dues?.count || 0}</p>
+                                    <div className="grid grid-cols-2 gap-4 relative z-10">
+                                        <div className="p-5 bg-white/5 rounded-[1.25rem] border border-white/5 backdrop-blur-sm space-y-1">
+                                            <p className="text-[9px] font-black text-blue-200/50 uppercase tracking-widest leading-none">Open Invoices</p>
+                                            <p className="text-3xl font-black font-mono leading-none pt-1">{dues?.count || 0}</p>
                                         </div>
-                                        <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
-                                            <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em] mb-1">Total Due</p>
-                                            <p className="text-2xl font-black font-mono text-blue-400">
+                                        <div className="p-5 bg-gradient-to-br from-blue-600/20 to-indigo-600/20 rounded-[1.25rem] border border-blue-500/20 backdrop-blur-sm space-y-1 relative overflow-hidden">
+                                            <div className="absolute top-0 right-0 w-16 h-16 bg-blue-400/20 blur-xl rounded-full" />
+                                            <p className="text-[9px] font-black text-blue-300/70 uppercase tracking-widest leading-none relative z-10">Total Due</p>
+                                            <p className="text-3xl font-black font-mono text-blue-400 leading-none pt-1 relative z-10">
                                                 {formatCurrency(dues?.total || 0)}
                                             </p>
                                         </div>
@@ -249,27 +260,25 @@ export const Payments = () => {
 
                                     {dues && dues.count > 0 && (
                                         <Button 
-                                            className="w-full bg-blue-600 hover:bg-blue-700 text-white border-none h-14 rounded-2xl font-black text-sm relative z-10"
+                                            className="w-full bg-blue-600 hover:bg-blue-700 text-white border-none py-6 rounded-[2rem] font-black text-base relative z-10 shadow-[0_8px_25px_-5px_rgba(37,99,235,0.5)] transform-gpu transition-all active:scale-[0.98]"
                                             onClick={() => setIsInvoiceOpen(true)}
                                         >
-                                            <FileText size={16} className="mr-2" />
+                                            <FileText size={18} className="mr-2" strokeWidth={2.5} />
                                             Generate Legal Bill
                                         </Button>
                                     )}
-
-                                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/20 blur-3xl" />
                                 </motion.div>
                             )}
                         </AnimatePresence>
 
                         {calculating && (
-                            <div className="py-12 flex flex-col items-center justify-center space-y-4">
-                                <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                            <div className="py-16 flex flex-col items-center justify-center space-y-5">
+                                <div className="w-12 h-12 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin" />
                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Auditing Transaction History...</p>
                             </div>
                         )}
                     </div>
-                </Card>
+                </GlassCard>
 
                 <PhysioInvoice 
                     isOpen={isInvoiceOpen} 
@@ -281,20 +290,20 @@ export const Payments = () => {
 
             {/* General Ledger Index */}
             <section className="space-y-6">
-                <div className="flex items-center justify-between px-2">
+                <div className="flex items-center justify-between px-1">
                     <div className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
-                        <h2 className="text-xs font-black text-slate-900 uppercase tracking-widest">Internal Ledger</h2>
+                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                        <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none">Internal Ledger</h2>
                     </div>
                     
-                    <div className="flex gap-1 bg-slate-100 p-1 rounded-xl">
+                    <div className="flex gap-1 bg-white/60 backdrop-blur-md p-1.5 rounded-2xl border border-slate-200/50 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
                         {(['all', 'Paid', 'Pending'] as const).map(f => (
                             <button
                                 key={f}
                                 onClick={() => setFilter(f)}
                                 className={cn(
-                                    "px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all",
-                                    filter === f ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"
+                                    "px-4 py-2 rounded-[0.75rem] text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer",
+                                    filter === f ? "bg-white text-blue-600 shadow-[0_2px_8px_rgba(0,0,0,0.05)] border border-slate-100" : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
                                 )}
                             >
                                 {f}
@@ -305,75 +314,94 @@ export const Payments = () => {
 
                 <div className="space-y-3">
                     {txLoading ? (
-                        [1, 2, 3].map(i => <div key={i} className="h-20 bg-white border border-slate-50 rounded-3xl animate-pulse" />)
+                        [1, 2, 3].map(i => <div key={i} className="h-24 bg-white/50 backdrop-blur-md rounded-[2rem] skeleton border-none" />)
                     ) : filteredTransactions.length === 0 ? (
-                        <div className="py-12 bg-slate-50/50 border border-dashed border-slate-200 rounded-[2.5rem] flex flex-col items-center justify-center text-center space-y-3">
-                            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-slate-200 shadow-sm">
-                                <CreditCard size={20} />
+                        <GlassCard className="!p-12 border-dashed border-slate-200 text-center space-y-4">
+                            <div className="w-16 h-16 bg-white/50 rounded-3xl flex items-center justify-center text-slate-300 shadow-sm border border-white mx-auto">
+                                <CreditCard size={28} strokeWidth={2} />
                             </div>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">No matching ledger entries</p>
-                        </div>
+                            <div className="space-y-1">
+                               <p className="text-slate-900 font-bold text-sm tracking-tight text-center">Empty Ledger</p>
+                               <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest text-center leading-relaxed">No matching transactions</p>
+                            </div>
+                        </GlassCard>
                     ) : (
-                        filteredTransactions.map((tx, idx) => (
-                            <motion.div
-                                key={tx.id}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: idx * 0.05 }}
-                            >
-                                <Card 
-                                    className="p-4 bg-white border-slate-100 hover:border-blue-200/50 hover:shadow-xl hover:shadow-blue-900/5 transition-all cursor-pointer group"
-                                    onClick={() => navigate(`/patients/${tx.patientId}/cases/${tx.caseId}`)}
+                        <AnimatePresence mode="popLayout">
+                            {filteredTransactions.map((tx, idx) => (
+                                <motion.div
+                                    key={tx.id}
+                                    layout
+                                    initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.95 }}
+                                    transition={{ delay: idx * 0.03 }}
                                 >
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-4">
-                                            <div className={cn(
-                                                "w-12 h-12 rounded-2xl flex items-center justify-center text-white transition-all",
-                                                tx.paymentStatus === 'Paid' ? "bg-emerald-600/90 shadow-lg shadow-emerald-900/10" : "bg-slate-900"
-                                            )}>
-                                                {tx.paymentStatus === 'Paid' ? <CheckCircle size={20} /> : <Clock size={20} />}
-                                            </div>
-                                            <div className="space-y-0.5">
-                                                <h4 className="text-sm font-black text-slate-900 group-hover:text-blue-600 transition-colors uppercase tracking-tight">{tx.patientName || 'Clinical Record'}</h4>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{tx.date}</span>
-                                                    <span className="w-1 h-1 bg-slate-200 rounded-full" />
-                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{tx.diagnosis || 'Therapy'}</span>
+                                    <GlassCard 
+                                        className="!p-5 hover:border-blue-300 transition-all cursor-pointer group"
+                                        onClick={() => navigate(`/patients/${tx.patientId}/cases/${tx.caseId}`)}
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-4">
+                                                <div className={cn(
+                                                    "w-14 h-14 rounded-[1.25rem] flex items-center justify-center text-white transition-all shadow-inner",
+                                                    tx.paymentStatus === 'Paid' ? "bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-[0_4px_15px_rgba(16,185,129,0.3)]" : "bg-gradient-to-br from-slate-800 to-slate-900 shadow-[0_4px_15px_rgba(15,23,42,0.3)]"
+                                                )}>
+                                                    {tx.paymentStatus === 'Paid' ? <CheckCircle size={22} strokeWidth={2.5}/> : <Clock size={22} strokeWidth={2.5} />}
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <h4 className="text-base font-bold text-slate-900 group-hover:text-blue-700 transition-colors tracking-tight leading-none italic">{tx.patientName || 'Clinical Record'}</h4>
+                                                    <div className="flex items-center gap-2 pt-1">
+                                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none bg-slate-100 rounded-md px-1.5 py-0.5">{tx.date}</span>
+                                                        <span className="w-1 h-1 bg-slate-300 rounded-full" />
+                                                        <span className="text-[9px] font-black text-blue-500 uppercase tracking-widest leading-none bg-blue-50 rounded-md px-1.5 py-0.5 max-w-[120px] truncate">{tx.diagnosis || 'Therapy'}</span>
+                                                    </div>
                                                 </div>
                                             </div>
+                                            <div className="text-right space-y-1.5 flex flex-col items-end">
+                                                <p className="text-base font-black text-slate-900 font-mono tracking-tighter leading-none">
+                                                    {formatCurrency(tx.amountPaid || tx.sessionFee || 500)}
+                                                </p>
+                                                <Badge variant={tx.paymentStatus === 'Paid' ? 'success' : 'warning'} className="text-[8px] px-2 py-0.5 uppercase shadow-none border-none">
+                                                    {tx.paymentStatus}
+                                                </Badge>
+                                            </div>
                                         </div>
-                                        <div className="text-right space-y-1">
-                                            <p className="text-sm font-black text-slate-900 font-mono tracking-tighter">
-                                                {formatCurrency(tx.amountPaid || tx.sessionFee || 500)}
-                                            </p>
-                                            <Badge variant={tx.paymentStatus === 'Paid' ? 'success' : 'warning'} className="text-[8px] px-1.5 py-0 uppercase">
-                                                {tx.paymentStatus}
-                                            </Badge>
-                                        </div>
-                                    </div>
-                                </Card>
-                            </motion.div>
-                        ))
+                                    </GlassCard>
+                                </motion.div>
+                            ))}
+                        </AnimatePresence>
                     )}
                 </div>
                 
                 {!txLoading && stats && (
-                    <div className="pt-6 grid grid-cols-3 gap-2">
-                        <div className="bg-slate-50 p-4 rounded-2xl text-center space-y-1">
-                            <Users size={14} className="mx-auto text-slate-400" />
-                            <p className="text-[10px] font-black text-slate-900">{stats.activePatients}</p>
-                            <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Active Patients</p>
-                        </div>
-                        <div className="bg-slate-50 p-4 rounded-2xl text-center space-y-1">
-                            <Calendar size={14} className="mx-auto text-slate-400" />
-                            <p className="text-[10px] font-black text-slate-900">{stats.totalSessions}</p>
-                            <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Total Clinical Sessions</p>
-                        </div>
-                        <div className="bg-slate-50 p-4 rounded-2xl text-center space-y-1">
-                            <FileText size={14} className="mx-auto text-slate-400" />
-                            <p className="text-[10px] font-black text-slate-900">{stats.monthlySessions}</p>
-                            <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Monthly Throughput</p>
-                        </div>
+                    <div className="pt-6 grid grid-cols-3 gap-3">
+                        <GlassCard className="!p-4 text-center space-y-2">
+                            <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center mx-auto">
+                                <Users size={14} strokeWidth={2.5}/>
+                            </div>
+                            <div>
+                                <p className="text-lg font-black text-slate-900 leading-none">{stats.activePatients}</p>
+                                <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest pt-1">Active</p>
+                            </div>
+                        </GlassCard>
+                        <GlassCard className="!p-4 text-center space-y-2">
+                             <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center mx-auto">
+                                <Calendar size={14} strokeWidth={2.5}/>
+                            </div>
+                            <div>
+                                <p className="text-lg font-black text-slate-900 leading-none">{stats.totalSessions}</p>
+                                <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest pt-1">Sessions</p>
+                            </div>
+                        </GlassCard>
+                        <GlassCard className="!p-4 text-center space-y-2">
+                             <div className="w-8 h-8 rounded-full bg-amber-50 text-amber-500 flex items-center justify-center mx-auto">
+                                <FileText size={14} strokeWidth={2.5}/>
+                            </div>
+                            <div>
+                                <p className="text-lg font-black text-slate-900 leading-none">{stats.monthlySessions}</p>
+                                <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest pt-1">Monthly</p>
+                            </div>
+                        </GlassCard>
                     </div>
                 )}
             </section>

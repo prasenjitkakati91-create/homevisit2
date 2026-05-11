@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { SearchProvider } from './context/SearchContext';
 import { AppLayout, AuthLayout } from './layouts/Layouts';
 import { Toaster } from 'sonner';
 import { Dashboard } from './pages/Dashboard';
@@ -13,8 +14,9 @@ import { Payments } from './pages/Payments';
 export default function App() {
   return (
     <AuthProvider>
-      <Toaster position="top-center" richColors />
-      <BrowserRouter>
+      <SearchProvider>
+        <Toaster position="top-center" richColors />
+        <BrowserRouter>
         <Routes>
           <Route element={<AppLayout />}>
             <Route path="/" element={<Dashboard />} />
@@ -33,6 +35,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
+      </SearchProvider>
     </AuthProvider>
   );
 }

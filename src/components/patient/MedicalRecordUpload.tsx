@@ -46,15 +46,11 @@ export const MedicalRecordUpload: React.FC<MedicalRecordUploadProps> = ({ patien
         }
       }
       
-      toast.loading(`Archiving ${fileToUpload.name}... 0%`, { id: 'upload-status' });
+      toast.loading(`Archiving ${fileToUpload.name}...`, { id: 'upload-status' });
       
       await uploadService.uploadFile(patientId, fileToUpload, (p) => {
         const roundedProgress = Math.round(p);
         setProgress(roundedProgress);
-        // Throttle toast updates to avoid UI lag
-        if (roundedProgress % 5 === 0 || roundedProgress === 100) {
-          toast.loading(`Archiving ${fileToUpload.name}... ${roundedProgress}%`, { id: 'upload-status' });
-        }
       });
       
       toast.success('Document archived successfully', { id: 'upload-status' });
@@ -129,12 +125,20 @@ export const MedicalRecordUpload: React.FC<MedicalRecordUploadProps> = ({ patien
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
                 </div>
-                <div className="absolute inset-0 flex items-center justify-center text-blue-700">
-                  <Loader2 className="w-5 h-5 animate-spin" />
+                <div className="absolute inset-0 flex items-center justify-center text-[10px] font-black text-blue-700">
+                  {progress}%
                 </div>
               </div>
               
               <div className="space-y-2">
+                <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                  <motion.div 
+                    className="h-full bg-blue-600"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${progress}%` }}
+                    transition={{ type: "spring", bounce: 0, duration: 0.5 }}
+                  />
+                </div>
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest animate-pulse">
                   Synchronizing with Vault...
                 </p>

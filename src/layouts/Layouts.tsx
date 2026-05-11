@@ -1,7 +1,8 @@
 import React from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Users, Calendar, CreditCard, Plus, Bell, User } from 'lucide-react';
+import { Home, Users, Calendar, CreditCard, Plus, Bell, User, Search, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useSearch } from '../context/SearchContext';
 import { cn } from '../utils/helpers';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
@@ -17,46 +18,47 @@ const BottomNav = () => {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 pointer-events-none">
-      {/* Background fill for safe area to prevent white gaps during overscroll/elastic scroll */}
-      <div className="absolute inset-0 bg-slate-900/95 backdrop-blur-3xl border-t border-white/5 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.3)] pointer-events-auto" />
-      
-      <nav className="relative h-16 px-6 flex items-start justify-between pointer-events-auto pt-3 mb-safe">
+    <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center pointer-events-none pb-safe">
+      <nav className="flex items-center justify-around pointer-events-auto bg-white/90 backdrop-blur-2xl border-t border-indigo-100 shadow-[0_-10px_30px_-10px_rgba(0,0,0,0.05)] w-full max-w-md px-2 h-14">
         {navItems.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
             className={({ isActive }) => 
               cn(
-                "flex flex-col items-center justify-center transition-all relative group py-1 flex-1 h-12",
-                isActive ? "text-white" : "text-white/40 hover:text-white/60"
+                "flex flex-col items-center justify-center transition-all relative group flex-1 h-full rounded-2xl",
+                isActive ? "text-indigo-600" : "text-slate-400 hover:text-slate-600 hover:bg-slate-50/50"
               )
             }
           >
             {({ isActive }) => (
               <>
                 <motion.div
-                  animate={isActive ? { scale: 1.1, y: -1 } : { scale: 1, y: 0 }}
-                  className="relative"
+                  animate={isActive ? { y: -2, scale: 1.05 } : { y: 0, scale: 1 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  className="relative z-10"
                 >
-                  <item.icon size={22} strokeWidth={isActive ? 2.5 : 2} />
+                  <item.icon size={20} strokeWidth={isActive ? 2.5 : 2} />
+                </motion.div>
+                
+                <AnimatePresence>
                   {isActive && (
                     <motion.div 
-                      layoutId="nav-glow"
-                      className="absolute inset-0 bg-blue-500/25 blur-xl rounded-full -z-10"
+                      layoutId="nav-pill"
+                      className="absolute inset-x-3 inset-y-1.5 bg-indigo-50 rounded-xl -z-10"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ type: "spring", stiffness: 300, damping: 25 }}
                     />
                   )}
-                </motion.div>
-                <span className={cn(
-                  "text-[9px] font-black uppercase tracking-[0.15em] mt-1.5 transition-all duration-300",
-                  isActive ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1 h-0"
-                )}>
-                  {item.label}
-                </span>
+                </AnimatePresence>
+
                 {isActive && (
                   <motion.div 
-                    layoutId="nav-dot"
-                    className="absolute -top-3 w-1 h-1 bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.8)]"
+                    layoutId="nav-indicator"
+                    className="absolute bottom-1 w-1 h-1 bg-indigo-600 rounded-full shadow-[0_0_8px_rgba(79,70,229,0.5)]"
+                    transition={{ type: "spring", stiffness: 300, damping: 25 }}
                   />
                 )}
               </>
@@ -70,6 +72,7 @@ const BottomNav = () => {
 
 const Header = () => {
     const { user, signInWithGoogle, logout } = useAuth();
+    const { searchQuery, setSearchQuery, clearSearch } = useSearch();
     const [scrolled, setScrolled] = React.useState(false);
     
     React.useEffect(() => {
@@ -85,35 +88,45 @@ const Header = () => {
         return "Good Evening";
     };
 
-    const handleAuthAction = () => {
-        if (user?.isMock) {
-            signInWithGoogle()
-                .then(() => toast.success('Connected to Clinical Cloud'))
-                .catch((err) => {
-                    toast.error('Cloud Sync failed. Check credentials.');
-                });
-        } else {
-            if (window.confirm('Disconnect from clinical cloud?')) {
-                logout().then(() => toast.info('Reverted to local preview mode'));
-            }
-        }
-    };
-
     return (
-        <header className="sticky top-0 transition-all duration-500 z-40 px-6 py-5 flex items-center justify-between pt-[calc(1.25rem+env(safe-area-inset-top))] bg-slate-950 text-white shadow-xl border-b border-white/5">
-            <div className="flex flex-col">
+        <header className={cn(
+            "fixed top-0 left-0 right-0 z-50 px-5 py-3 flex items-center justify-between gap-3 pt-[calc(0.75rem+env(safe-area-inset-top))] transition-all duration-300 max-w-md mx-auto bg-white border-b",
+            scrolled ? "shadow-lg border-indigo-100 rounded-b-3xl" : "border-indigo-100"
+        )}>
+            <div className="flex flex-col flex-shrink-0">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">{getTimeGreeting()}</span>
-              <h1 className="text-lg font-black text-white tracking-tight font-display italic leading-none uppercase">
+              <h1 className="text-sm font-black text-slate-900 tracking-tight leading-none mt-1 max-w-[120px] truncate">
                 {user?.name ? (
                   <>
-                    {user.name.split(' ').slice(0, -1).join(' ')} <span className="text-blue-500 not-italic">{user.name.split(' ').slice(-1)}</span>
+                    {user.name.split(' ').slice(0, -1).join(' ')} <span className="text-indigo-600">{user.name.split(' ').slice(-1)}</span>
                   </>
                 ) : (
                   <>
-                    Trishnamoni <span className="text-blue-500 not-italic font-black">Haloi</span>
+                    Trishnamoni <span className="text-indigo-600">Haloi</span>
                   </>
                 )}
               </h1>
+            </div>
+            
+            <div className="relative w-full max-w-[200px]">
+              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                <Search size={16} className="text-slate-400" />
+              </div>
+              <input
+                type="text"
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full h-9 bg-slate-50 border border-slate-200/60 rounded-xl pl-9 pr-8 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 transition-all shadow-sm"
+              />
+              {searchQuery && (
+                <button 
+                  onClick={clearSearch}
+                  className="absolute inset-y-0 right-2 flex items-center text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  <X size={14} />
+                </button>
+              )}
             </div>
         </header>
     );
@@ -125,8 +138,7 @@ export const AppLayout: React.FC = () => {
     
     if (loading) {
         return (
-            <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 relative overflow-hidden">
-                {/* Background Glows */}
+            <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 relative overflow-hidden">
                 <motion.div 
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -138,83 +150,36 @@ export const AppLayout: React.FC = () => {
                 </motion.div>
 
                 <div className="relative z-10 flex flex-col items-center space-y-10">
-                    {/* Central Icon with advanced animation */}
                     <div className="relative">
                         <motion.div
-                            animate={{ 
-                                scale: [1, 1.05, 1],
-                                rotate: [0, 5, -5, 0]
-                            }}
-                            transition={{ 
-                                duration: 4, 
-                                repeat: Infinity,
-                                ease: "easeInOut"
-                            }}
-                            className="w-24 h-24 bg-white rounded-[2rem] flex items-center justify-center shadow-[0_20px_50px_rgba(59,130,246,0.3)] relative z-20"
+                            animate={{ scale: [1, 1.05, 1], rotate: [0, 5, -5, 0] }}
+                            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                            className="w-24 h-24 bg-white/10 backdrop-blur-xl border border-white/20 rounded-[2rem] flex items-center justify-center shadow-[0_20px_50px_rgba(59,130,246,0.2)] relative z-20"
                         >
-                            <Users size={44} className="text-blue-600" />
+                            <Users size={44} className="text-blue-400" />
                         </motion.div>
-                        
-                        {/* Orbiting rings */}
                         <motion.div 
                             animate={{ rotate: 360 }}
                             transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-                            className="absolute -inset-4 border border-blue-500/20 rounded-full border-dashed"
-                        />
-                        <motion.div 
-                            animate={{ rotate: -360 }}
-                            transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-                            className="absolute -inset-8 border border-white/5 rounded-full border-dashed"
+                            className="absolute -inset-4 border border-blue-400/20 rounded-full border-dashed"
                         />
                     </div>
-
-                    {/* Progress Text */}
-                    <div className="space-y-4 text-center">
-                        <div className="flex flex-col items-center space-y-2">
-                            <h2 className="text-white text-xl font-black tracking-tight uppercase italic font-display">
-                                Physio<span className="text-blue-500 not-italic">Track</span>
-                            </h2>
-                            <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.4em] animate-pulse">
-                                Initializing Secure Protocol
-                            </p>
-                        </div>
-
-                        {/* Minimalist Progress Bar */}
-                        <div className="w-48 h-1 bg-slate-900 rounded-full overflow-hidden border border-white/5 mx-auto">
-                            <motion.div 
-                                initial={{ x: "-100%" }}
-                                animate={{ x: "100%" }}
-                                transition={{ 
-                                    duration: 2, 
-                                    repeat: Infinity, 
-                                    ease: "easeInOut" 
-                                }}
-                                className="w-1/2 h-full bg-gradient-to-r from-blue-600 to-indigo-500 shadow-[0_0_15px_rgba(59,130,246,0.5)]"
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                <div className="absolute bottom-10 left-0 right-0 text-center">
-                    <p className="text-slate-600 text-[8px] font-bold uppercase tracking-[0.2em] font-mono">
-                        System v2.4.9 // Neural Sync Active
-                    </p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-[#F8FAFC]">
+        <div className="min-h-screen bg-indigo-50/80">
             <Header />
-            <main className="max-w-md mx-auto px-5 px-safe pb-32 pt-2">
+            <main className="max-w-md mx-auto px-5 px-safe pb-40 pt-24">
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={location.pathname}
-                        initial={{ opacity: 0, y: 15 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -15 }}
-                        transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                        initial={{ opacity: 0, y: 15, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -15, scale: 0.98 }}
+                        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                     >
                         <Outlet />
                     </motion.div>
@@ -228,25 +193,24 @@ export const AppLayout: React.FC = () => {
 
 export const AuthLayout: React.FC = () => {
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 pt-safe pb-safe relative overflow-hidden">
-      {/* Decorative background elements */}
+    <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 pt-safe pb-safe relative overflow-hidden">
       <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-blue-600/20 rounded-full blur-[120px]" />
       <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-indigo-600/10 rounded-full blur-[100px]" />
       
       <div className="w-full max-w-sm relative z-10">
         <div className="text-center mb-12 space-y-3">
-          <div className="w-16 h-16 bg-white rounded-3xl flex items-center justify-center mx-auto shadow-xl premium-shadow mb-6">
-            <CreditCard size={32} className="text-blue-600" />
+          <div className="w-16 h-16 bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl flex items-center justify-center mx-auto shadow-xl premium-shadow mb-6">
+            <CreditCard size={32} className="text-blue-400" />
           </div>
-          <h1 className="text-4xl font-extrabold text-white tracking-tight leading-none font-display">Physio<span className="text-blue-500 font-bold">Track</span></h1>
-          <p className="text-slate-400 text-sm font-medium tracking-tight">Clinical practice management, redefined.</p>
+          <h1 className="text-4xl font-extrabold text-white tracking-tight leading-none">Physio<span className="text-blue-500 font-bold">Track</span></h1>
         </div>
-        <div className="bg-white/5 backdrop-blur-2xl border border-white/10 p-8 rounded-[2.5rem] premium-shadow">
+        <div className="bg-white/10 backdrop-blur-2xl border border-white/10 p-8 rounded-[2.5rem] premium-shadow">
             <Outlet />
         </div>
-        <p className="text-center mt-10 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Secure Medical Environment</p>
       </div>
     </div>
   );
 };
+
+
 

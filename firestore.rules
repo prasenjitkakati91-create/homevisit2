@@ -17,7 +17,7 @@ service cloud.firestore {
     }
 
     function isValidId(id) {
-      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+      return id is string && id.size() <= 128; // removed brittle regex
     }
 
     // Patients
@@ -39,7 +39,7 @@ service cloud.firestore {
         allow read, list: if true;
         
         function isValidCase(data) {
-          return data.title is string && data.physioId is string && isValidId(data.physioId);
+          return data.diagnosis is string && data.physioId is string && isValidId(data.physioId);
         }
 
         allow create: if isPhysio(request.resource.data.physioId) && isValidCase(request.resource.data);

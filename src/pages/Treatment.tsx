@@ -32,6 +32,7 @@ import { formatDate, formatCurrency, cn } from '../utils/helpers';
 import { generateReceiptPDF, shareOnWhatsApp, generateAppointmentMessage, generatePaymentMessage } from '../utils/sharing';
 import { toast } from 'sonner';
 import { ArrowRight } from 'lucide-react';
+import { useSearch } from '../context/SearchContext';
 
 export const EditSession = () => {
     const { patientId, caseId, sessionId } = useParams();
@@ -88,26 +89,27 @@ export const EditSession = () => {
     };
   
     if (fetching) return (
-        <div className="p-10 space-y-6">
-            <div className="h-10 w-24 bg-slate-100 animate-pulse rounded-2xl" />
-            <div className="h-64 bg-white border border-slate-50 rounded-[2.5rem] animate-pulse" />
+        <div className="p-10 space-y-6 px-2">
+            <div className="h-10 w-24 bg-slate-100 skeleton rounded-2xl border-none" />
+            <div className="h-64 bg-white/50 backdrop-blur-md border border-slate-50 rounded-[2.5rem] skeleton overflow-hidden" />
         </div>
     );
 
     return (
       <div className="space-y-8 pb-10">
         <div className="flex items-center gap-4 px-2">
-          <button onClick={() => navigate(-1)} className="p-3 bg-white border border-slate-100 rounded-2xl text-slate-400 hover:text-slate-900 transition-all shadow-sm active:scale-90">
+          <button onClick={() => navigate(-1)} className="p-3 bg-white/60 backdrop-blur-xl border border-slate-200/50 rounded-2xl text-slate-400 hover:text-slate-900 transition-all shadow-sm active:scale-95 cursor-pointer">
             <ArrowLeft size={20} strokeWidth={2.5} />
           </button>
           <div className="space-y-0.5">
-            <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest leading-none">Diagnostic Update</p>
-            <h1 className="text-xl font-black text-slate-950 tracking-tight leading-none italic">Edit <span className="not-italic">Protocol</span></h1>
+            <p className="text-[9px] font-black text-blue-500 uppercase tracking-widest leading-none">Diagnostic Update</p>
+            <h1 className="text-xl font-black text-slate-900 tracking-tight leading-none italic">Edit <span className="not-italic text-blue-900">Protocol</span></h1>
           </div>
         </div>
   
         <form onSubmit={handleSubmit} className="space-y-6 px-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
-           <Card className="p-8 space-y-6">
+           <GlassCard className="!p-8 space-y-6 relative overflow-visible">
+            <div className="absolute -top-6 -right-6 w-32 h-32 bg-amber-500/10 rounded-full blur-[40px] pointer-events-none" />
             <div className="grid grid-cols-2 gap-4">
                 <Input
                 label="Protocol date"
@@ -156,9 +158,9 @@ export const EditSession = () => {
                 value={formData.nextVisitDate}
                 onChange={(e) => setFormData({ ...formData, nextVisitDate: e.target.value })}
             />
-          </Card>
+          </GlassCard>
 
-          <Button type="submit" variant="primary" className="w-full py-6 rounded-[2rem]" loading={loading}>
+          <Button type="submit" variant="primary" className="w-full py-6 rounded-[2rem] text-base" loading={loading}>
             Synchronize Metrics
           </Button>
         </form>
@@ -216,11 +218,11 @@ export const PatientDetail = () => {
   const isCompleted = patient?.status === 'Completed';
 
   if (loading) return (
-    <div className="p-8 space-y-6">
-        <div className="h-10 w-32 bg-slate-100 animate-pulse rounded-2xl" />
+    <div className="p-8 space-y-6 px-2">
+        <div className="h-10 w-32 bg-slate-100 skeleton rounded-2xl border-none" />
         <div className="space-y-4">
-            <div className="h-48 bg-slate-900 rounded-[3rem] animate-pulse" />
-            <div className="h-64 bg-white rounded-[3rem] animate-pulse" />
+            <div className="h-48 bg-slate-900 rounded-[3rem] skeleton border-none" />
+            <div className="h-64 bg-slate-100 rounded-[3rem] skeleton border-none" />
         </div>
     </div>
   );
@@ -230,12 +232,12 @@ export const PatientDetail = () => {
     <div className="space-y-8 pb-10">
       <div className="flex items-center justify-between px-2">
         <div className="flex items-center gap-4">
-          <button onClick={() => navigate('/patients')} className="p-3 bg-white border border-slate-100 rounded-2xl text-slate-400 hover:text-slate-900 transition-all shadow-sm active:scale-90">
+          <button onClick={() => navigate('/patients')} className="p-3 bg-white/60 backdrop-blur-xl border border-slate-200/50 rounded-2xl text-slate-400 hover:text-slate-900 transition-all shadow-sm active:scale-95 cursor-pointer">
             <ArrowLeft size={20} strokeWidth={2.5} />
           </button>
           <div className="space-y-0.5">
-            <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest leading-none">Record Index</p>
-            <h1 className="text-xl font-black text-slate-950 tracking-tight leading-none italic">Clinical <span className="not-italic">Context</span></h1>
+            <p className="text-[9px] font-black text-blue-500 uppercase tracking-widest leading-none">Record Index</p>
+            <h1 className="text-xl font-black text-slate-900 tracking-tight leading-none italic">Clinical <span className="not-italic text-blue-900">Context</span></h1>
           </div>
         </div>
         <div className="flex gap-2">
@@ -243,13 +245,13 @@ export const PatientDetail = () => {
                 <>
                     <button 
                         onClick={() => navigate(`/patients/${patientId}/edit`)} 
-                        className="p-3 bg-white border border-slate-100 text-slate-400 hover:text-blue-600 rounded-2xl transition-all shadow-sm active:scale-95"
+                        className="p-3 bg-white/50 backdrop-blur-md border border-white/60 text-slate-400 hover:text-blue-600 rounded-2xl transition-all shadow-sm active:scale-95 cursor-pointer"
                     >
                         <Edit2 size={18} strokeWidth={2.5} />
                     </button>
                     <button 
                         onClick={handleDeletePatient} 
-                        className="p-3 bg-white border border-slate-100 text-slate-400 hover:text-red-600 rounded-2xl transition-all shadow-sm active:scale-95"
+                        className="p-3 bg-white/50 backdrop-blur-md border border-white/60 text-slate-400 hover:text-red-500 rounded-2xl transition-all shadow-sm active:scale-95 cursor-pointer"
                     >
                         <Trash2 size={18} strokeWidth={2.5} />
                     </button>
@@ -260,44 +262,45 @@ export const PatientDetail = () => {
 
       {/* Patient Profile Widget - Dark UI for Premium feel */}
       <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ type: 'spring', stiffness: 200, damping: 20 }}
         className="px-2"
       >
-        <div className="relative p-7 rounded-[3rem] bg-slate-900 text-white overflow-hidden shadow-2xl shadow-slate-200">
+        <div className="relative p-7 rounded-[3rem] bg-slate-900 text-white overflow-hidden shadow-[0_20px_40px_-15px_rgba(15,23,42,0.6)]">
            <div className="relative z-10 flex flex-col gap-6">
               <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                   <div className="w-16 h-16 bg-white/10 rounded-3xl backdrop-blur-md border border-white/10 flex items-center justify-center font-black text-2xl text-white">
+                <div className="flex items-center gap-4">
+                   <div className="w-16 h-16 bg-gradient-to-br from-white/20 to-white/5 rounded-[1.25rem] backdrop-blur-xl border border-white/20 shadow-inner flex items-center justify-center font-black text-2xl text-white">
                       {patient.name?.[0] || 'P'}
                    </div>
                    <div className="space-y-1">
-                      <h2 className="text-3xl font-black font-display tracking-tight leading-none italic">{patient.name}</h2>
+                      <h2 className="text-3xl font-black font-display tracking-tight leading-none italic text-blue-50">{patient.name}</h2>
                       <div className="flex gap-2">
-                         <Badge className="bg-white/5 text-white/60 border-white/5 text-[9px] uppercase tracking-widest leading-none py-1.5">{patient.gender}</Badge>
-                         <Badge className="bg-white/5 text-white/60 border-white/5 text-[9px] uppercase tracking-widest leading-none py-1.5">{patient.age}Y</Badge>
+                         <Badge className="bg-white/5 text-blue-200 border-white/10 text-[9px] uppercase tracking-widest leading-none py-1.5">{patient.gender}</Badge>
+                         <Badge className="bg-white/5 text-blue-200 border-white/10 text-[9px] uppercase tracking-widest leading-none py-1.5">{patient.age}Y</Badge>
                       </div>
                    </div>
                 </div>
               </div>
               
               <div className="grid grid-cols-2 gap-3 pt-2">
-                 <a href={`tel:${patient.phone}`} className="flex items-center gap-3 p-4 bg-white/5 border border-white/5 rounded-2xl hover:bg-white/10 transition-all">
-                    <div className="p-2 bg-blue-500/20 text-blue-400 rounded-xl">
+                 <a href={`tel:${patient.phone}`} className="flex items-center gap-3 p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all cursor-pointer">
+                    <div className="p-2 bg-blue-500/20 text-blue-400 rounded-xl shadow-inner">
                        <Phone size={16} strokeWidth={2.5} />
                     </div>
                     <div className="space-y-0.5 min-w-0">
-                       <p className="text-[8px] font-black text-white/30 uppercase tracking-widest leading-none">Contact</p>
-                       <p className="text-xs font-bold text-white/90 truncate">{patient.phone}</p>
+                       <p className="text-[8px] font-black text-blue-300/60 uppercase tracking-widest leading-none">Contact</p>
+                       <p className="text-xs font-bold text-blue-50 truncate">{patient.phone}</p>
                     </div>
                  </a>
-                 <div className="flex items-center gap-3 p-4 bg-white/5 border border-white/5 rounded-2xl">
-                    <div className="p-2 bg-indigo-500/20 text-indigo-400 rounded-xl">
+                 <div className="flex items-center gap-3 p-4 bg-white/5 border border-white/10 rounded-2xl cursor-default">
+                    <div className="p-2 bg-indigo-500/20 text-indigo-400 rounded-xl shadow-inner">
                        <MapPin size={16} strokeWidth={2.5} />
                     </div>
                     <div className="space-y-0.5 min-w-0">
-                       <p className="text-[8px] font-black text-white/30 uppercase tracking-widest leading-none">Location</p>
-                       <p className="text-xs font-bold text-white/90 truncate">{patient.address}</p>
+                       <p className="text-[8px] font-black text-indigo-300/60 uppercase tracking-widest leading-none">Location</p>
+                       <p className="text-xs font-bold text-blue-50 truncate">{patient.address}</p>
                     </div>
                  </div>
               </div>
@@ -312,8 +315,8 @@ export const PatientDetail = () => {
       {/* Diagnostic Records */}
       <section className="space-y-6 px-2">
         <div className="flex items-center gap-2">
-            <div className="w-1 h-3 bg-blue-600 rounded-full" />
-            <h2 className="text-xs font-black text-slate-950 uppercase tracking-widest leading-none">Diagnostic Matrix</h2>
+            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+            <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none">Diagnostic Matrix</h2>
         </div>
         
         <MedicalRecordUpload 
@@ -337,11 +340,11 @@ export const PatientDetail = () => {
       <section className="space-y-4 px-2 pt-2">
         <div className="flex items-center justify-between">
            <div className="flex items-center gap-2">
-                <div className="w-1 h-3 bg-blue-600 rounded-full" />
-                <h2 className="text-xs font-black text-slate-950 uppercase tracking-widest leading-none">Treatment cycles</h2>
+                <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full shadow-[0_0_8px_rgba(99,102,241,0.5)]" />
+                <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none">Treatment cycles</h2>
            </div>
            {!isCompleted && (
-              <Button size="sm" variant="ghost" className="text-[10px] font-black uppercase tracking-widest text-blue-600 p-0 hover:bg-transparent" onClick={() => navigate(`/patients/${patientId}/cases/add`)}>
+              <Button size="sm" variant="ghost" className="text-[9px] font-black uppercase tracking-widest text-blue-600 p-0 hover:bg-transparent" onClick={() => navigate(`/patients/${patientId}/cases/add`)}>
                 <Plus size={14} className="mr-1" /> New Case
               </Button>
            )}
@@ -349,7 +352,7 @@ export const PatientDetail = () => {
 
         {cases.length === 0 ? (
           <GlassCard className="flex flex-col items-center justify-center py-12 text-center space-y-4 border-dashed border-slate-200">
-             <div className="w-14 h-14 bg-white/50 rounded-2xl flex items-center justify-center text-slate-200 border border-white">
+             <div className="w-14 h-14 bg-white/50 rounded-2xl flex items-center justify-center text-slate-300 border border-white">
                <Activity size={26} />
              </div>
              <div className="space-y-1">
@@ -361,26 +364,27 @@ export const PatientDetail = () => {
         ) : (
           <div className="space-y-3">
             {cases.map((trCase) => (
-              <Card 
+              <GlassCard 
                 key={trCase.id} 
-                className="p-5 group hover:border-blue-100 transition-all border-slate-50/50"
+                className="!p-5 group hover:border-blue-300 transition-all border-white/60 relative overflow-hidden"
                 onClick={() => navigate(`/patients/${patientId}/cases/${trCase.id}`)}
               >
-                <div className="flex items-start justify-between">
+                <div className="absolute right-0 top-0 w-32 h-32 bg-blue-500/10 rounded-full blur-[40px] opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                <div className="flex items-start justify-between relative z-10">
                   <div className="space-y-3">
-                    <h3 className="font-bold text-slate-950 group-hover:text-blue-600 transition-colors leading-tight tracking-tight text-base italic">{trCase.diagnosis}</h3>
+                    <h3 className="font-bold text-slate-900 group-hover:text-blue-700 transition-colors leading-tight tracking-tight text-base italic">{trCase.diagnosis}</h3>
                     <div className="flex items-center gap-2">
-                      <Badge variant={trCase.status === 'Active' ? 'success' : 'neutral'}>
+                      <Badge variant={trCase.status === 'Active' ? 'success' : 'neutral'} className="shadow-none">
                         {trCase.status}
                       </Badge>
-                      <Badge variant="info" className="bg-slate-100 text-slate-400 border-none">{trCase.condition}</Badge>
+                      <Badge variant="info" className="bg-slate-100 text-slate-400 border-none shadow-none">{trCase.condition}</Badge>
                     </div>
                   </div>
-                  <div className="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center group-hover:bg-blue-50 group-hover:scale-105 transition-all">
-                    <ChevronRight size={18} className="text-slate-300 group-hover:text-blue-600" />
+                  <div className="w-10 h-10 rounded-[1.25rem] bg-white/80 border border-white flex items-center justify-center group-hover:bg-blue-500 group-hover:border-blue-400 group-hover:scale-110 group-hover:shadow-[0_8px_20px_rgba(59,130,246,0.3)] transition-all duration-300">
+                    <ChevronRight size={18} className="text-slate-400 group-hover:text-white" />
                   </div>
                 </div>
-              </Card>
+              </GlassCard>
             ))}
           </div>
         )}
@@ -425,17 +429,18 @@ export const CaseAdd = () => {
     return (
       <div className="space-y-8 pb-10">
         <div className="flex items-center gap-4 px-2">
-          <button onClick={() => navigate(-1)} className="p-3 bg-white border border-slate-100 rounded-2xl text-slate-400 hover:text-slate-900 transition-all shadow-sm active:scale-90">
+          <button onClick={() => navigate(-1)} className="p-3 bg-white/60 backdrop-blur-xl border border-slate-200/50 rounded-2xl text-slate-400 hover:text-slate-900 transition-all shadow-sm active:scale-95 cursor-pointer">
             <ArrowLeft size={20} strokeWidth={2.5} />
           </button>
           <div className="space-y-0.5">
-            <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest leading-none">Initialization</p>
-            <h1 className="text-xl font-black text-slate-950 tracking-tight leading-none italic">New Case <span className="not-italic">Protocol</span></h1>
+            <p className="text-[9px] font-black text-blue-500 uppercase tracking-widest leading-none">Initialization</p>
+            <h1 className="text-xl font-black text-slate-900 tracking-tight leading-none italic">New Case <span className="not-italic text-blue-900">Protocol</span></h1>
           </div>
         </div>
   
         <form onSubmit={handleSubmit} className="space-y-6 px-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <Card className="p-8 space-y-6">
+          <GlassCard className="!p-8 space-y-6 relative overflow-visible">
+            <div className="absolute -top-6 -right-6 w-32 h-32 bg-indigo-500/10 rounded-full blur-[40px] pointer-events-none" />
             <Input
                 label="Primary diagnosis"
                 placeholder="e.g. Cervical Spondylosis / Post-Op ACL"
@@ -483,9 +488,9 @@ export const CaseAdd = () => {
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
             />
-          </Card>
+          </GlassCard>
 
-          <Button type="submit" variant="primary" className="w-full py-6 rounded-[2rem]" loading={loading}>
+          <Button type="submit" variant="primary" className="w-full py-6 rounded-[2rem] text-base" loading={loading}>
             Deploy Treatment Case
           </Button>
         </form>
@@ -496,6 +501,7 @@ export const CaseAdd = () => {
 export const CaseDetail = () => {
     const { patientId, caseId } = useParams();
     const navigate = useNavigate();
+    const { searchQuery } = useSearch();
     const [trCase, setTrCase] = useState<any>(null);
     const [patient, setPatient] = useState<any>(null);
     const [sessions, setSessions] = useState<any[]>([]);
@@ -525,11 +531,11 @@ export const CaseDetail = () => {
     }, [patientId, caseId]);
   
     if (loading) return (
-        <div className="p-8 space-y-6">
-            <div className="h-10 w-48 bg-slate-100 animate-pulse rounded-2xl" />
+        <div className="p-8 space-y-6 px-2">
+            <div className="h-10 w-48 bg-slate-100 skeleton rounded-2xl border-none" />
             <div className="grid grid-cols-2 gap-4">
-                <div className="h-40 bg-slate-900 rounded-[2.5rem] animate-pulse" />
-                <div className="h-40 bg-slate-100 rounded-[2.5rem] animate-pulse" />
+                <div className="h-40 bg-slate-900 rounded-[2.5rem] skeleton border-none" />
+                <div className="h-40 bg-slate-100 rounded-[2.5rem] skeleton border-none" />
             </div>
         </div>
     );
@@ -585,11 +591,11 @@ export const CaseDetail = () => {
       <div className="space-y-8 pb-10">
         <div className="flex items-center justify-between px-2">
             <div className="flex items-center gap-4">
-                <button onClick={() => navigate(`/patients/${patientId}`)} className="p-3 bg-white border border-slate-100 rounded-2xl text-slate-400 hover:text-slate-900 transition-all shadow-sm active:scale-90">
+                <button onClick={() => navigate(`/patients/${patientId}`)} className="p-3 bg-white/60 backdrop-blur-xl border border-slate-200/50 rounded-2xl text-slate-400 hover:text-slate-900 transition-all shadow-sm active:scale-95 cursor-pointer">
                     <ArrowLeft size={20} strokeWidth={2.5} />
                 </button>
                 <div className="space-y-0.5">
-                    <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest leading-none">Therapeutic Ledger</p>
+                    <p className="text-[9px] font-black text-indigo-500 uppercase tracking-widest leading-none">Therapeutic Ledger</p>
                     <h1 className="text-xl font-black text-slate-900 tracking-tight leading-none italic">{trCase.diagnosis}</h1>
                 </div>
             </div>
@@ -597,8 +603,8 @@ export const CaseDetail = () => {
                 <button 
                   onClick={() => handleUpdateStatus(trCase.status === 'Active' ? 'Completed' : 'Active')} 
                   className={cn(
-                    "p-3 rounded-2xl transition-all shadow-sm active:scale-95",
-                    trCase.status === 'Active' ? "bg-emerald-50 text-emerald-600 border border-emerald-100" : "bg-blue-50 text-blue-600 border border-blue-100"
+                    "p-3 rounded-[1.25rem] transition-all shadow-[0_2px_10px_rgba(0,0,0,0.05)] active:scale-95 cursor-pointer",
+                    trCase.status === 'Active' ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20" : "bg-blue-500/10 text-blue-600 border border-blue-500/20"
                   )}
                 >
                     <CheckCircle2 size={18} strokeWidth={2.5} />
@@ -607,20 +613,26 @@ export const CaseDetail = () => {
         </div>
   
         {/* Case Summary Cards */}
-        <div className="grid grid-cols-2 gap-4">
-          <Card className="p-6 bg-blue-600 text-white border-none shadow-xl shadow-blue-200 relative overflow-hidden group">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-100/60 mb-2 relative z-10">Phase Progression</p>
-            <p className="text-3xl font-black relative z-10">{sessions.length}<span className="text-base font-medium text-white/50 ml-2 italic">/ {trCase.expectedSessions}</span></p>
-            <div className="absolute -right-4 -bottom-4 bg-white/10 w-20 h-20 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700" />
-          </Card>
-          <Card className="p-6 bg-slate-950 text-white border-none shadow-xl shadow-slate-900/20 relative overflow-hidden group">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 relative z-10">Revenue Yield</p>
+        <div className="grid grid-cols-2 gap-4 px-2">
+          <div className="p-6 bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-[2rem] shadow-[0_12px_24px_-8px_rgba(37,99,235,0.4)] relative overflow-hidden group">
+            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-200 mb-2 relative z-10">Phase Progression</p>
+            <p className="text-3xl font-black relative z-10 font-mono tracking-tighter">{sessions.length}<span className="text-base font-medium text-blue-300 ml-2 italic">/ {trCase.expectedSessions}</span></p>
+            <div className="absolute -right-10 -bottom-10 bg-white/20 w-32 h-32 rounded-full blur-[40px] group-hover:scale-150 transition-transform duration-700 pointer-events-none" />
+            <div className="absolute top-0 right-0 p-4 opacity-20 pointer-events-none">
+              <Activity size={48} />
+            </div>
+          </div>
+          <div className="p-6 bg-slate-900 text-white rounded-[2rem] shadow-[0_12px_24px_-8px_rgba(15,23,42,0.4)] relative overflow-hidden group">
+            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 relative z-10">Revenue Yield</p>
             <p className="text-xl font-black font-mono relative z-10">{formatCurrency(totalEarnings)}</p>
-            <div className="absolute -right-4 -bottom-4 bg-blue-500/10 w-20 h-20 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700" />
-          </Card>
+            <div className="absolute -right-10 -bottom-10 bg-indigo-500/20 w-32 h-32 rounded-full blur-[40px] group-hover:scale-150 transition-transform duration-700 pointer-events-none" />
+            <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+               <Wallet size={48} />
+            </div>
+          </div>
           {pendingEarnings > 0 && (
              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="col-span-2">
-                <Card className="p-5 sm:p-6 bg-gradient-to-r from-orange-50 to-amber-50/50 border border-orange-200/60 flex items-center justify-between rounded-[1.75rem] relative overflow-hidden group shadow-[0_8px_30px_-4px_rgba(249,115,22,0.1)] hover:shadow-[0_8px_30px_-4px_rgba(249,115,22,0.2)] transition-all duration-300">
+                <GlassCard className="!p-5 sm:!p-6 bg-gradient-to-r from-orange-50/80 to-amber-50/50 border-orange-200/60 flex items-center justify-between rounded-[2rem] relative overflow-hidden group shadow-[0_8px_30px_-4px_rgba(249,115,22,0.1)] hover:shadow-[0_8px_30px_-4px_rgba(249,115,22,0.2)] transition-all duration-300">
                     <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-orange-500/5 to-transparent pointer-events-none" />
                     <div className="absolute -right-10 -top-10 w-32 h-32 bg-orange-500/10 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
                     
@@ -629,90 +641,98 @@ export const CaseDetail = () => {
                             <AlertCircle size={24} strokeWidth={2.5} />
                         </div>
                         <div className="space-y-1">
-                            <p className="text-[10px] font-black uppercase text-orange-600/70 tracking-[0.2em] leading-none mb-1.5">Outstanding Ledger</p>
+                            <p className="text-[9px] font-black uppercase text-orange-600/70 tracking-[0.2em] leading-none mb-1.5">Outstanding Ledger</p>
                             <p className="text-2xl font-black text-orange-950 font-mono tracking-tight leading-none group-hover:text-orange-600 transition-colors">{formatCurrency(pendingEarnings)}</p>
                         </div>
                     </div>
-                </Card>
+                </GlassCard>
              </motion.div>
           )}
         </div>
   
         {/* Sessions Timeline */}
         <div className="space-y-6">
-          <div className="flex items-center justify-between px-1">
+          <div className="flex items-center justify-between px-3">
             <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-blue-500 rounded-full" />
-                <h2 className="text-xs font-bold text-slate-950 uppercase tracking-[0.15em] font-display">Module Logs</h2>
+                <div className="w-1.5 h-1.5 bg-blue-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+                <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest font-display">Module Logs</h2>
             </div>
             <div className="flex gap-3">
                 <button 
                     onClick={handleShareReminders}
-                    className="p-3 bg-white border border-slate-200 text-slate-400 hover:text-blue-600 rounded-xl transition-all medical-shadow active:scale-95"
+                    className="p-3 bg-white/60 backdrop-blur-xl border border-slate-200/50 text-slate-400 hover:text-blue-600 rounded-xl transition-all shadow-sm active:scale-95 cursor-pointer"
                 >
                     <Share2 size={18} />
                 </button>
                 {!isCompleted && (
                     <button 
                         onClick={() => navigate(`/patients/${patientId}/cases/${caseId}/sessions/add`)}
-                        className="flex items-center gap-2 px-5 py-3 bg-slate-950 text-white rounded-[1.25rem] text-xs font-black uppercase tracking-widest hover:bg-blue-600 transition-all active:scale-95 shadow-xl shadow-slate-900/10"
+                        className="flex items-center gap-2 px-5 py-3 bg-slate-900 border border-slate-800 text-white rounded-[1.25rem] text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all active:scale-95 shadow-[0_8px_20px_-8px_rgba(15,23,42,0.4)] cursor-pointer"
                     >
                         <Plus size={16} /> Record
                     </button>
                 )}
             </div>
           </div>
-  
+   
           {sessions.length === 0 ? (
-            <Card className="bg-slate-50 border-none flex flex-col items-center justify-center py-20 text-center space-y-6 border-2 border-dashed border-slate-200">
-               <div className="w-20 h-20 bg-white rounded-[2rem] flex items-center justify-center text-slate-200 shadow-sm border border-slate-100">
+            <div className="px-2">
+            <GlassCard className="flex flex-col items-center justify-center py-16 text-center space-y-6 border-2 border-dashed border-slate-200">
+               <div className="w-20 h-20 bg-white/50 rounded-[2rem] flex items-center justify-center text-slate-300 shadow-sm border border-slate-100">
                  <Plus size={40} />
                </div>
                <div className="space-y-1">
-                  <p className="text-slate-900 text-lg font-black tracking-tight">Timeline Latency</p>
-                  <p className="text-slate-400 text-xs font-medium uppercase tracking-[0.15em]">Clinical interventions have not yet commenced for this cycle</p>
+                  <p className="text-slate-900 text-lg font-black tracking-tight leading-none">Timeline Latency</p>
+                  <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.15em]">Clinical interventions have not yet commenced</p>
                </div>
-               <Button variant="primary" onClick={() => navigate(`/patients/${patientId}/cases/${caseId}/sessions/add`)} className="rounded-xl px-10">Initialize Module 01</Button>
-            </Card>
+               <Button variant="outline" onClick={() => navigate(`/patients/${patientId}/cases/${caseId}/sessions/add`)} className="rounded-xl px-10 bg-white border-slate-200">Initialize Module 01</Button>
+            </GlassCard></div>
           ) : (
-            <div className="space-y-6 relative ml-4">
-              <div className="absolute left-[7px] top-6 bottom-4 w-[2px] bg-slate-200/50" />
-              {sessions.map((session, idx) => (
+            <div className="space-y-6 relative ml-4 px-2">
+              <div className="absolute left-[13px] top-6 bottom-4 w-[2px] bg-gradient-to-b from-blue-500/50 via-indigo-500/20 to-transparent" />
+              {sessions
+                .filter(session => 
+                  !searchQuery || 
+                  session.treatmentDone?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  session.notes?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  formatDate(session.date).toLowerCase().includes(searchQuery.toLowerCase())
+                )
+                .map((session, idx) => (
                 <motion.div 
                     key={session.id} 
                     className="relative pl-10"
-                    initial={{ opacity: 0, scale: 0.98 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: idx * 0.05 }}
+                    initial={{ opacity: 0, x: -20, scale: 0.95 }}
+                    animate={{ opacity: 1, x: 0, scale: 1 }}
+                    transition={{ delay: idx * 0.05, type: 'spring', stiffness: 200, damping: 20 }}
                 >
                   <div className={cn(
-                    "absolute left-0 top-1.5 w-4 h-4 rounded-full border-4 border-white shadow-sm ring-2 z-10 transition-all",
-                    session.paymentStatus === 'Paid' ? "bg-emerald-500 ring-emerald-100" : "bg-orange-500 ring-orange-100"
+                    "absolute left-[-2px] top-1.5 w-[22px] h-[22px] rounded-full border-[5px] border-white/80 backdrop-blur-md shadow-sm z-10 transition-all shadow-[0_4px_10px_rgba(0,0,0,0.1)]",
+                    session.paymentStatus === 'Paid' ? "bg-emerald-500" : "bg-amber-500"
                   )} />
                   
-                  <Card className="hover:border-blue-400 bg-white p-6 rounded-[2rem] transition-all group overflow-visible">
+                  <GlassCard className="!p-6 !rounded-[2rem] group hover:border-blue-300 transition-all overflow-visible">
                     <div className="flex justify-between items-start mb-6">
                        <div className="space-y-1">
                           <p className="text-lg font-black text-slate-900 tracking-tight leading-none">{formatDate(session.date)}</p>
                           <div className="flex items-center gap-2">
-                             <Badge variant={session.paymentStatus === 'Paid' ? 'success' : 'warning'} className="py-0.5">
+                             <Badge variant={session.paymentStatus === 'Paid' ? 'success' : 'warning'} className="py-0.5 shadow-none">
                                  {session.paymentStatus}
                              </Badge>
-                             <span className="text-[10px] font-mono font-black text-slate-300 uppercase tracking-widest">{formatCurrency(session.amountPaid || 0)}</span>
+                             <span className="text-[10px] font-mono font-black text-slate-400 uppercase tracking-widest">{formatCurrency(session.amountPaid || 0)}</span>
                           </div>
                        </div>
-                       <div className="flex items-center gap-1 bg-slate-50 p-1.5 rounded-2xl border border-slate-100 medical-shadow">
+                       <div className="flex items-center gap-1 bg-white/60 p-1.5 rounded-[1.25rem] border border-slate-200/50 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
                             {!isCompleted && (
                                 <>
                                     <button 
                                         onClick={() => navigate(`/patients/${patientId}/cases/${caseId}/sessions/${session.id}/edit`)}
-                                        className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-white rounded-xl transition-all"
+                                        className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-white rounded-xl transition-all cursor-pointer"
                                     >
                                         <Edit2 size={16} />
                                     </button>
                                     <button 
                                         onClick={() => handleDeleteSession(session.id)}
-                                        className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-white rounded-xl transition-all"
+                                        className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-white rounded-xl transition-all cursor-pointer"
                                     >
                                         <Trash2 size={16} />
                                     </button>
@@ -727,7 +747,7 @@ export const CaseDetail = () => {
                                             error: 'Compilation Error'
                                         });
                                     }}
-                                    className="p-2.5 bg-blue-600 text-white rounded-xl transition-all medical-shadow active:scale-95"
+                                    className="p-2.5 bg-blue-600 text-white rounded-xl transition-all shadow-[0_4px_12px_rgba(37,99,235,0.3)] active:scale-95 cursor-pointer hover:bg-blue-700"
                                 >
                                     <Download size={16} />
                                 </button>
@@ -735,29 +755,29 @@ export const CaseDetail = () => {
                        </div>
                     </div>
 
-                    <div className="bg-slate-50/80 p-5 rounded-[1.5rem] mb-6 relative border border-slate-100/50 backdrop-blur-sm">
-                       <p className="text-sm text-slate-600 leading-relaxed font-semibold italic text-balance">
-                           <span className="text-blue-500 text-lg mr-1 tracking-tighter">"</span>
+                    <div className="bg-white/50 p-5 rounded-[1.5rem] mb-6 relative border border-white/60 shadow-[0_2px_15px_rgba(0,0,0,0.02)] backdrop-blur-sm">
+                       <p className="text-sm text-slate-700 leading-relaxed font-semibold italic text-balance">
+                           <span className="text-blue-400 text-xl mr-1 tracking-tighter leading-none">"</span>
                            {session.treatmentDone || 'Session progress recorded.'}
-                           <span className="text-blue-500 text-lg ml-1 tracking-tighter">"</span>
+                           <span className="text-blue-400 text-xl ml-1 tracking-tighter leading-none">"</span>
                         </p>
                        {session.paymentStatus === 'Pending' && !isCompleted && (
                            <button 
                             onClick={() => handleMarkAsPaid(session)}
-                            className="absolute -top-3 right-4 bg-orange-500 text-white text-[9px] font-black uppercase tracking-[0.15em] px-4 py-2 rounded-xl shadow-lg shadow-orange-500/30 active:scale-95 border border-orange-400"
+                            className="absolute -top-3 right-4 bg-orange-500 text-white text-[9px] font-black uppercase tracking-[0.15em] px-4 py-2 rounded-xl shadow-[0_4px_12px_rgba(249,115,22,0.4)] active:scale-95 border border-orange-400 cursor-pointer"
                            >
                             Finalize Due
                            </button>
                        )}
                     </div>
-
+                    
                     <div className="flex items-center justify-between pt-2">
                         <div className="flex items-center gap-6">
-                            <div className="space-y-0.5">
-                                <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest leading-none">Pain Threshold</p>
+                            <div className="space-y-1">
+                                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none">Pain Threshold</p>
                                 <div className="flex items-center gap-2">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                                    <span className="text-sm font-black font-mono text-slate-900">{session.painScore}/10</span>
+                                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+                                    <span className="text-sm font-black font-mono text-slate-900 leading-none">{session.painScore}/10</span>
                                 </div>
                             </div>
                         </div>
@@ -766,19 +786,17 @@ export const CaseDetail = () => {
                                 const msg = `Session Acknowledgement. Hello ${patient?.name || 'Patient'}, modular summary recorded for ${session.date}. Amount optimized: ${formatCurrency(session.amountPaid)}. Ref: PhysioTrack System.`;
                                 shareOnWhatsApp(patient?.phone || '9111111111', msg);
                             }}
-                            className="flex items-center gap-2 px-5 py-3 bg-white border border-slate-200 text-emerald-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 hover:text-white transition-all active:scale-95 medical-shadow"
+                            className="flex items-center gap-2 px-5 py-3 bg-white/60 backdrop-blur-md border border-slate-200/50 text-emerald-600 rounded-[1.25rem] text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 hover:text-white transition-all active:scale-95 shadow-[0_2px_10px_rgba(0,0,0,0.03)] cursor-pointer"
                         >
                             <Share2 size={14} /> Distribute
                         </button>
                     </div>
-                  </Card>
+                  </GlassCard>
                 </motion.div>
               ))}
             </div>
           )}
         </div>
-
-        {/* Global Action FAB removed as per request to remove + icon */}
       </div>
     );
 };
@@ -851,20 +869,20 @@ export const SessionAdd = () => {
     return (
       <div className="space-y-8 pb-10">
         <div className="flex items-center gap-4 px-2">
-          <button onClick={() => navigate(-1)} className="p-3 bg-white border border-slate-100 rounded-2xl text-slate-400 hover:text-slate-900 transition-all shadow-sm active:scale-90">
+          <button onClick={() => navigate(-1)} className="p-3 bg-white/60 backdrop-blur-xl border border-slate-200/50 rounded-2xl text-slate-400 hover:text-slate-900 transition-all shadow-sm active:scale-95 cursor-pointer">
             <ArrowLeft size={20} strokeWidth={2.5} />
           </button>
           <div className="space-y-0.5">
-            <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest leading-none">Deployment</p>
-            <h1 className="text-xl font-black text-slate-950 tracking-tight leading-none italic">New <span className="not-italic">Protocol</span></h1>
+            <p className="text-[9px] font-black text-blue-500 uppercase tracking-widest leading-none">Deployment</p>
+            <h1 className="text-xl font-black text-slate-900 tracking-tight leading-none italic">New <span className="not-italic text-blue-900">Protocol</span></h1>
           </div>
         </div>
   
         {/* Templates */}
         <div className="space-y-4 px-2">
             <div className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
-                <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest leading-none">Protocol Templates</p>
+                <div className="w-1.5 h-1.5 bg-blue-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+                <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest leading-none">Protocol Templates</p>
             </div>
             <div className="flex gap-3 overflow-x-auto pb-4 no-scrollbar -mx-1 px-1">
                 {['Cervical', 'Lumbar', 'Stroke', 'ACL', 'Knee OA'].map(t => (
@@ -872,7 +890,7 @@ export const SessionAdd = () => {
                         key={t}
                         whileTap={{ scale: 0.95 }}
                         onClick={() => applyTemplate(t)}
-                        className="whitespace-nowrap px-6 py-3 bg-white border border-slate-100 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-blue-600 hover:border-blue-100 transition-all active:bg-blue-50"
+                        className="whitespace-nowrap px-6 py-3 bg-white/60 backdrop-blur-lg border border-slate-200/50 rounded-[1.25rem] text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-blue-600 hover:border-blue-300 transition-all active:bg-blue-50/50 cursor-pointer shadow-[0_2px_10px_rgba(0,0,0,0.02)] hover:shadow-[0_4px_15px_rgba(59,130,246,0.1)]"
                     >
                         {t}
                     </motion.button>
@@ -881,7 +899,8 @@ export const SessionAdd = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6 px-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <Card className="p-8 space-y-6">
+          <GlassCard className="!p-8 space-y-6 relative overflow-visible">
+            <div className="absolute -top-6 -right-6 w-32 h-32 bg-emerald-500/10 rounded-full blur-[40px] pointer-events-none" />
             <div className="grid grid-cols-2 gap-4">
                 <Input
                 label="Module date"
@@ -930,9 +949,9 @@ export const SessionAdd = () => {
                 value={formData.nextVisitDate}
                 onChange={(e) => setFormData({ ...formData, nextVisitDate: e.target.value })}
             />
-          </Card>
+          </GlassCard>
 
-          <Button type="submit" variant="primary" className="w-full py-6 rounded-[2rem]" loading={loading}>
+          <Button type="submit" variant="primary" className="w-full py-6 rounded-[2rem] text-base" loading={loading}>
             Deploy Module Entry
           </Button>
         </form>

@@ -1,6 +1,6 @@
 {
   "name": "PhysioTrack",
   "description": "Professional practice management system for clinical physiotherapy records, patient session tracking, and medical file archiving.",
-  "requestFramePermissions": ["camera"],
+  "requestFramePermissions": [],
   "majorCapabilities": []
 }
