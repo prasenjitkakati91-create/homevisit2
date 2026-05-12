@@ -121,9 +121,41 @@ export const patientService = {
     const path = `patients/${id}`;
     try {
       const docRef = doc(db, 'patients', id);
-      await updateDoc(docRef, { status, updatedAt: serverTimestamp() });
+      const updateData: any = { status, updatedAt: serverTimestamp() };
+      if (status === 'Completed') {
+        updateData.completedAt = serverTimestamp();
+      } else {
+        updateData.completedAt = null;
+      }
+      await updateDoc(docRef, updateData);
     } catch (e) {
       handleFirestoreError(e, OperationType.UPDATE, path);
+    }
+  },
+
+  async cleanupOldPatients() {
+    const path = 'patients';
+    try {
+      const q = query(
+        collection(db, path),
+        where('physioId', '==', FIXED_PHYSIO_ID),
+        where('status', '==', 'Completed')
+      );
+      const snapshot = await getDocs(q);
+      const now = Date.now();
+      const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1000;
+
+      const deletePromises = snapshot.docs.map(async (pDoc) => {
+        const data = pDoc.data();
+        const completedAt = data.completedAt?.toMillis ? data.completedAt.toMillis() : 0;
+        
+        if (completedAt && (now - completedAt > NINETY_DAYS_MS)) {
+           return deleteDoc(pDoc.ref);
+        }
+      });
+      await Promise.all(deletePromises);
+    } catch (e) {
+      console.error('[Cleanup] Failed:', e);
     }
   },
 
@@ -364,7 +396,11 @@ export const sessionService = {
     try {
       // For a production app, we'd use aggregation docs or cloud functions
       // For this demo, we'll fetch recently active entities
-      const patientsSnapshot = await getDocs(query(collection(db, 'patients'), where('physioId', '==', FIXED_PHYSIO_ID)));
+      const patientsSnapshot = await getDocs(query(
+        collection(db, 'patients'), 
+        where('physioId', '==', FIXED_PHYSIO_ID),
+        where('status', '==', 'Active')
+      ));
       const activePatients = patientsSnapshot.size;
 
       const sessionsSnapshot = await getDocs(query(collectionGroup(db, 'sessions'), where('physioId', '==', FIXED_PHYSIO_ID)));

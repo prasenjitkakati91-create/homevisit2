@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { patientService, sessionService, caseService } from '../services/db';
 import { formatDate, formatCurrency, cn } from '../utils/helpers';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, X, CheckCircle } from 'lucide-react';
@@ -25,6 +25,15 @@ export const CalendarPage = () => {
     const [completingLoading, setCompletingLoading] = React.useState(false);
 
     const navigate = useNavigate();
+    const location = useLocation();
+
+    React.useEffect(() => {
+        if (location.state?.openBooking) {
+            setIsScheduling(true);
+            // Clear the state so it doesn't reopen on every render/navigation
+            window.history.replaceState({}, document.title);
+        }
+    }, [location]);
 
     React.useEffect(() => {
         const fetchData = async () => {
@@ -292,7 +301,7 @@ export const CalendarPage = () => {
                                             <div className="flex items-center gap-4">
                                                 <div className="relative">
                                                     <div className="w-14 h-14 bg-slate-900 rounded-2xl flex items-center justify-center text-white font-black text-xl group-hover:bg-blue-600 transition-colors duration-500">
-                                                        {visit.patientName?.[0] || 'P'}
+                                                        {(visit.patientName?.[0] || 'P').toUpperCase()}
                                                     </div>
                                                     {visit.paymentStatus === 'Paid' && (
                                                         <div className="absolute -top-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center">
@@ -301,7 +310,7 @@ export const CalendarPage = () => {
                                                     )}
                                                 </div>
                                                 <div className="space-y-0.5">
-                                                    <h4 className="font-black text-slate-900 group-hover:text-blue-700 transition-colors text-base tracking-tight leading-none italic uppercase">{visit.patientName || 'Patient'}</h4>
+                                                    <h4 className="font-black text-slate-900 group-hover:text-blue-700 transition-colors text-base tracking-tight leading-none italic uppercase capitalize">{visit.patientName || 'Patient'}</h4>
                                                     <p className="text-[9px] font-black text-indigo-500/80 uppercase tracking-widest leading-none pt-1">{visit.diagnosis || 'Therapy Index'}</p>
                                                     <p className="text-[8px] text-slate-400 font-medium truncate max-w-[140px] mt-1">{visit.treatmentDone || 'Session record'}</p>
                                                 </div>
@@ -433,7 +442,7 @@ export const CalendarPage = () => {
 
                             <div className="space-y-1 mb-8 relative z-10">
                                 <p className="text-[9px] font-black text-blue-500 uppercase tracking-widest leading-none">Session Finalization</p>
-                                <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-none italic">{completingVisit.patientName || 'Patient'}</h3>
+                                <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-none italic capitalize">{completingVisit.patientName || 'Patient'}</h3>
                             </div>
                             
                             <form onSubmit={handleCompleteVisit} className="space-y-6 relative z-10">

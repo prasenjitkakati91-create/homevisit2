@@ -19,32 +19,38 @@ const BottomNav = () => {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-t border-slate-100 pb-safe">
-      <nav className="flex items-center justify-around w-full max-w-md mx-auto px-2 h-16">
+    <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-t border-slate-100/60 pb-safe shadow-[0_-8px_30px_rgba(0,0,0,0.04)]">
+      <nav className="flex items-center justify-around w-full max-w-md mx-auto px-4 h-16">
         {navItems.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
             className={({ isActive }) => 
               cn(
-                "flex flex-col items-center justify-center transition-all relative group flex-1 h-full",
-                isActive ? "text-indigo-600" : "text-slate-400 hover:text-slate-600"
+                "flex flex-col items-center justify-center transition-all duration-300 relative group flex-1 h-full pt-1",
+                isActive ? "text-indigo-600" : "text-slate-400"
               )
             }
           >
             {({ isActive }) => (
               <>
                 <motion.div
-                  animate={isActive ? { y: -2, scale: 1.1 } : { y: 0, scale: 1 }}
+                  animate={isActive ? { y: -2, scale: 1.1 } : { y: 2, scale: 1 }}
                   transition={{ type: "spring", stiffness: 400, damping: 25 }}
                   className="relative z-10"
                 >
-                  <item.icon size={22} strokeWidth={isActive ? 2.5 : 2} />
+                  <item.icon size={21} strokeWidth={isActive ? 2.5 : 2} />
+                  {isActive && (
+                    <motion.div 
+                      layoutId="nav-glow"
+                      className="absolute inset-0 bg-indigo-500/20 blur-lg rounded-full -z-10"
+                    />
+                  )}
                 </motion.div>
                 
                 <span className={cn(
-                  "text-[9px] font-bold tracking-tight mt-1 transition-all duration-300",
-                  isActive ? "opacity-100 scale-100" : "opacity-0 scale-90 h-0 overflow-hidden"
+                  "text-[10px] font-bold tracking-tight transition-all duration-500 mt-1.5",
+                  isActive ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 h-0 overflow-hidden"
                 )}>
                   {item.label}
                 </span>
@@ -52,7 +58,7 @@ const BottomNav = () => {
                 {isActive && (
                   <motion.div 
                     layoutId="nav-indicator"
-                    className="absolute top-0 w-8 h-1 bg-indigo-600 rounded-b-full shadow-[0_0_10px_rgba(79,70,229,0.3)]"
+                    className="absolute bottom-0 w-8 h-1 bg-indigo-600 rounded-t-full"
                     transition={{ type: "spring", stiffness: 300, damping: 25 }}
                   />
                 )}
@@ -117,9 +123,9 @@ const Header = () => {
             scrolled ? "shadow-sm border-slate-100" : "border-transparent"
         )}>
             <div className="flex flex-col flex-shrink-0">
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-1">PhysioTrack</span>
-              <h1 className="text-sm font-black text-slate-900 tracking-tight leading-none truncate max-w-[100px]">
-                {user?.name?.split(' ')[0] || 'Trishnamoni'}
+              <span className="text-[9px] font-black text-indigo-500 uppercase tracking-[0.2em] leading-none mb-1">{getTimeGreeting()}</span>
+              <h1 className="text-sm font-black text-slate-900 tracking-tight leading-none truncate max-w-[140px]">
+                {user?.name || 'Dr. Trishnamoni Haloi'}
               </h1>
             </div>
             
@@ -249,26 +255,26 @@ export const AppLayout: React.FC = () => {
     }
 
     return (
-        <div className="min-h-screen bg-[#F8FAFC]">
+        <div className="min-h-screen bg-[#F8FAFC] flex flex-col">
             <Header />
             <main className={cn(
-                "max-w-md mx-auto px-4 px-safe pb-32 pt-28 transition-all duration-300",
-                isSearchFocused ? "opacity-60 pointer-events-none blur-sm" : "opacity-100"
+                "flex-1 w-full max-w-md mx-auto px-4 px-safe pb-32 pt-28 transition-all duration-500",
+                isSearchFocused ? "opacity-30 pointer-events-none blur-md scale-[0.98]" : "opacity-100"
             )}>
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={location.pathname}
-                        initial={{ opacity: 0, scale: 0.98 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.98 }}
-                        transition={{ duration: 0.3 }}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.3, ease: "easeOut" }}
                     >
                         <Outlet />
                     </motion.div>
                 </AnimatePresence>
             </main>
             
-            <BottomNav />
+            {!isSearchFocused && <BottomNav />}
         </div>
     );
 };

@@ -208,10 +208,10 @@ export const Payments = () => {
                                         >
                                             <div className="flex items-center gap-4">
                                                 <div className="w-12 h-12 bg-gradient-to-br from-slate-50 to-slate-100 rounded-[1rem] flex items-center justify-center font-black text-blue-600 shadow-sm border border-slate-200/50 group-hover:shadow-[0_4px_15px_rgba(59,130,246,0.15)] group-hover:border-blue-300 transition-all">
-                                                    {p.name?.[0]}
+                                                    {(p.name?.[0] || 'P').toUpperCase()}
                                                 </div>
                                                 <div className="text-left space-y-0.5">
-                                                    <p className="text-sm font-black text-slate-900 group-hover:text-blue-700 tracking-tight leading-none italic">{p.name}</p>
+                                                    <p className="text-sm font-black text-slate-900 group-hover:text-blue-700 tracking-tight leading-none italic capitalize">{p.name}</p>
                                                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none pt-1">{p.phone}</p>
                                                 </div>
                                             </div>
@@ -237,7 +237,7 @@ export const Payments = () => {
                                     <div className="relative z-10 flex justify-between items-start">
                                         <div className="space-y-1.5">
                                             <p className="text-[9px] font-black text-blue-400 uppercase tracking-widest leading-none">Practice Account</p>
-                                            <h4 className="text-3xl font-black italic font-display tracking-tight leading-none">{selectedPatient.name}</h4>
+                                            <h4 className="text-3xl font-black italic font-display tracking-tight leading-none capitalize">{selectedPatient.name}</h4>
                                         </div>
                                         <div className="w-12 h-12 flex items-center justify-center bg-white/10 rounded-[1.25rem] border border-white/10 shadow-inner backdrop-blur-md">
                                             <Wallet size={20} className="text-blue-400" strokeWidth={2.5} />
@@ -349,7 +349,7 @@ export const Payments = () => {
                                                     {tx.paymentStatus === 'Paid' ? <CheckCircle size={22} strokeWidth={2.5}/> : <Clock size={22} strokeWidth={2.5} />}
                                                 </div>
                                                 <div className="space-y-1">
-                                                    <h4 className="text-base font-bold text-slate-900 group-hover:text-blue-700 transition-colors tracking-tight leading-none italic">{tx.patientName || 'Clinical Record'}</h4>
+                                                    <h4 className="text-base font-bold text-slate-900 group-hover:text-blue-700 transition-colors tracking-tight leading-none italic capitalize">{tx.patientName || 'Clinical Record'}</h4>
                                                     <div className="flex items-center gap-2 pt-1">
                                                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none bg-slate-100 rounded-md px-1.5 py-0.5">{tx.date}</span>
                                                         <span className="w-1 h-1 bg-slate-300 rounded-full" />

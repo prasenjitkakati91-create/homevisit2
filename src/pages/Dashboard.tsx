@@ -297,9 +297,9 @@ export const Dashboard = () => {
         </div>
 
         {visitsLoading ? (
-            <div className="space-y-3">
+            <div className="space-y-4">
                 {[1, 2].map(i => (
-                    <div key={i} className="h-20 bg-slate-100 rounded-[2.5rem] skeleton border-none"></div>
+                    <div key={i} className="h-24 bg-slate-100 rounded-[2rem] skeleton border-none"></div>
                 ))}
             </div>
         ) : visits.length === 0 ? (
@@ -342,99 +342,155 @@ export const Dashboard = () => {
             </div>
           </motion.div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
              {visits
                .filter(visit => 
                  !searchQuery || 
                  visit.patientName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                  visit.treatmentDone?.toLowerCase().includes(searchQuery.toLowerCase())
                )
-               .map((visit, idx) => (
-               <motion.div
-                key={visit.id}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.1 + idx * 0.05, type: 'spring', stiffness: 200, damping: 20 }}
-               >
-                <Link to={`/patients/${visit.patientId}/cases/${visit.caseId}`}>
-                    <div className="relative group">
-                        <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-3xl opacity-0 group-hover:opacity-10 transition-opacity duration-300 blur-sm" />
-                        <GlassCard className="relative !p-4 group hover:border-blue-300/50 transition-all shadow-sm group-hover:shadow-md bg-white/60">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-4">
-                                    <div className="relative">
-                                        <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-white font-black text-lg group-hover:bg-blue-600 transition-colors duration-300">
-                                            {visit.patientName?.[0] || 'P'}
-                                        </div>
-                                        {visit.paymentStatus === 'Paid' && (
-                                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center">
-                                                <CheckCircle size={10} className="text-white" />
+               .map((visit, idx) => {
+                 const isScheduled = visit.treatmentDone?.startsWith('Scheduled:');
+                 const isCompleted = visit.treatmentDone?.startsWith('Completed:');
+                 
+                 return (
+                   <motion.div
+                    key={visit.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 + idx * 0.05, type: 'spring', stiffness: 200, damping: 20 }}
+                   >
+                    <Link to={`/patients/${visit.patientId}/cases/${visit.caseId}`}>
+                        <div className="relative group">
+                            <div className={cn(
+                                "absolute -inset-0.5 rounded-[2rem] opacity-0 group-hover:opacity-100 transition-all duration-500 blur-md -z-10",
+                                isScheduled ? "bg-indigo-500/20" : "bg-emerald-500/20"
+                            )} />
+                            <GlassCard className={cn(
+                                "relative !p-5 group transition-all duration-500 shadow-sm border border-slate-100 rounded-[2rem] bg-white group-hover:shadow-xl group-hover:-translate-y-1",
+                                isScheduled ? "hover:border-indigo-200" : "hover:border-emerald-200"
+                            )}>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-4">
+                                        <div className="relative flex-shrink-0">
+                                            <div className={cn(
+                                                "w-14 h-14 rounded-2xl flex items-center justify-center text-white font-black text-xl transition-all duration-500",
+                                                isScheduled ? "bg-slate-900 group-hover:bg-indigo-600" : "bg-emerald-600 shadow-lg shadow-emerald-200"
+                                            )}>
+                                                {(visit.patientName?.[0] || 'P').toUpperCase()}
                                             </div>
+                                            {isCompleted && (
+                                                <div className="absolute -top-1.5 -right-1.5 w-6 h-6 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center shadow-sm">
+                                                    <CheckCircle size={14} className="text-white" />
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="space-y-1">
+                                            <div className="flex items-center gap-2">
+                                                <h4 className="font-extrabold text-slate-900 tracking-tight text-base italic capitalize">
+                                                    {visit.patientName || 'Patient'}
+                                                </h4>
+                                                {isScheduled && (
+                                                    <span className="flex h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
+                                                )}
+                                            </div>
+                                            
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex items-center gap-1.5 text-slate-400">
+                                                    <Clock size={11} className={cn(isScheduled ? "text-indigo-400" : "text-emerald-400")} />
+                                                    <p className="text-[10px] font-black uppercase tracking-widest leading-none">{visit.time || 'Entry'}</p>
+                                                </div>
+                                                <span className="w-1 h-1 bg-slate-200 rounded-full" />
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight truncate max-w-[100px]">
+                                                    {isScheduled ? 'Upcoming' : 'Settled'}
+                                                </p>
+                                            </div>
+                                            
+                                            <p className="text-[11px] text-slate-500 font-medium truncate max-w-[160px] pt-0.5">
+                                                {isScheduled 
+                                                  ? visit.treatmentDone.replace('Scheduled: ', '') 
+                                                  : visit.treatmentDone?.replace('Completed: ', '') || 'Session finished'
+                                                }
+                                            </p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="flex flex-col items-end gap-2">
+                                        {isScheduled && (
+                                            <motion.button 
+                                                whileTap={{ scale: 0.9 }}
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    setCompletionData({ paymentStatus: 'Paid', amountPaid: 500 });
+                                                    setCompletingVisit(visit);
+                                                }}
+                                                className="text-[9px] font-black uppercase tracking-[0.15em] text-white bg-indigo-600 px-4 py-2.5 rounded-xl shadow-lg shadow-indigo-200 hover:bg-slate-900 transition-all"
+                                            >
+                                                Complete
+                                            </motion.button>
                                         )}
-                                    </div>
-                                    <div className="space-y-0.5">
-                                        <h4 className="font-black text-slate-900 group-hover:text-blue-600 transition-colors tracking-tight text-sm uppercase italic">{visit.patientName || 'Patient'}</h4>
-                                        <div className="flex items-center gap-2">
-                                            <div className="flex items-center gap-1.5 text-slate-400">
-                                                <span className="w-1 h-1 bg-indigo-400 rounded-full" />
-                                                <p className="text-[10px] font-black uppercase tracking-widest leading-none">{visit.time || 'Entry'}</p>
-                                            </div>
+                                        <div className="w-10 h-10 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center group-hover:bg-indigo-50 group-hover:border-indigo-100 transition-all duration-500">
+                                            <ArrowRight size={16} className="text-slate-300 group-hover:text-indigo-600" />
                                         </div>
-                                        <p className="text-[9px] text-slate-400 font-medium truncate max-w-[120px]">{visit.treatmentDone || 'Session scheduled'}</p>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-3">
-                                    {visit.treatmentDone?.startsWith('Scheduled:') && (
-                                        <button 
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                e.stopPropagation();
-                                                setCompletionData({ paymentStatus: 'Paid', amountPaid: 500 });
-                                                setCompletingVisit(visit);
-                                            }}
-                                            className="text-[9px] font-black uppercase tracking-widest text-white bg-slate-900 px-3 py-2 rounded-xl active:scale-95 hover:bg-blue-600 transition-all shadow-md"
-                                        >
-                                            End Visit
-                                        </button>
-                                    )}
-                                    <div className="w-10 h-10 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center group-hover:bg-indigo-50 group-hover:border-indigo-100 transition-all duration-300">
-                                        <ArrowRight size={14} className="text-slate-400 group-hover:text-indigo-600" />
-                                    </div>
-                                </div>
-                            </div>
-                        </GlassCard>
-                    </div>
-                </Link>
-               </motion.div>
-             ))}
+                            </GlassCard>
+                        </div>
+                    </Link>
+                   </motion.div>
+                 );
+               })}
           </div>
         )}
       </motion.section>
 
       {/* Quick Launchpad */}
       <motion.section 
-        initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
-        className="space-y-4 pt-4"
+        initial={{ opacity: 0, y: 15 }} 
+        animate={{ opacity: 1, y: 0 }} 
+        transition={{ delay: 0.5 }}
+        className="space-y-6 pt-4"
       >
-        <div className="flex items-center gap-2 px-2">
-            <div className="w-1.5 h-1.5 bg-slate-400 rounded-full" />
-            <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] leading-none">Quick Launch</h2>
+        <div className="flex items-center justify-between px-2">
+            <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse" />
+                <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] leading-none">Command Center</h2>
+            </div>
+            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Select Action</p>
         </div>
+        
         <div className="grid grid-cols-2 gap-4">
           <LaunchBtn 
             label="In-take" 
-            sub="New Patient" 
+            sub="Register" 
             icon={Plus} 
             color="indigo" 
             onClick={() => navigate('/patients/add')} 
           />
           <LaunchBtn 
-            label="Index" 
-            sub="Database" 
+            label="Registry" 
+            sub="Search" 
             icon={Search} 
-            color="blue" 
+            color="emerald" 
             onClick={() => navigate('/patients')} 
           />
+          <div className="col-span-2 grid grid-cols-2 gap-4">
+              <LaunchBtn 
+                label="Billing" 
+                sub="Ledger" 
+                icon={Wallet} 
+                color="amber" 
+                onClick={() => navigate('/payments')} 
+              />
+              <LaunchBtn 
+                label="Timeline" 
+                sub="Schedule" 
+                icon={Calendar} 
+                color="rose" 
+                onClick={() => navigate('/calendar', { state: { openBooking: true } })} 
+              />
+          </div>
         </div>
       </motion.section>
 
@@ -488,10 +544,10 @@ export const Dashboard = () => {
                         <div className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-[1.75rem] hover:border-blue-300 hover:shadow-sm transition-all group">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white font-black text-sm group-hover:bg-blue-600 transition-colors italic">
-                              {visit.patientName?.[0] || 'P'}
+                              {(visit.patientName?.[0] || 'P').toUpperCase()}
                             </div>
                             <div className="space-y-0.5">
-                              <p className="text-xs font-black text-slate-900 tracking-tight italic group-hover:text-blue-600 transition-colors uppercase truncate max-w-[150px]">
+                              <p className="text-xs font-black text-slate-900 tracking-tight italic group-hover:text-blue-600 transition-colors capitalize">
                                 {visit.patientName}
                               </p>
                               <div className="flex items-center gap-1.5 opacity-60">
@@ -569,10 +625,10 @@ export const Dashboard = () => {
                         <div className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-[1.75rem] hover:border-blue-300 hover:shadow-sm transition-all group">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white font-black text-sm group-hover:bg-blue-600 transition-colors italic">
-                              {visit.patientName?.[0] || 'P'}
+                              {(visit.patientName?.[0] || 'P').toUpperCase()}
                             </div>
                             <div className="space-y-0.5">
-                              <p className="text-xs font-black text-slate-900 tracking-tight italic group-hover:text-blue-600 transition-colors uppercase truncate max-w-[150px]">
+                              <p className="text-xs font-black text-slate-900 tracking-tight italic group-hover:text-blue-600 transition-colors capitalize">
                                 {visit.patientName}
                               </p>
                               <div className="flex items-center gap-1.5 opacity-60">
@@ -614,8 +670,8 @@ export const Dashboard = () => {
                       <div className="w-12 h-12 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 flex items-center justify-center text-blue-600 rounded-[1.25rem] shadow-sm mb-4">
                         <CheckCircle size={24} strokeWidth={2.5}/>
                       </div>
-                      <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-none italic">Complete Session</h3>
-                      <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">{completingVisit.patientName || 'Patient'}</p>
+                      <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-none italic capitalize">Complete Session</h3>
+                      <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest capitalize">{completingVisit.patientName || 'Patient'}</p>
                   </div>
                   
                   <form onSubmit={handleCompleteVisit} className="space-y-6 relative z-10">
@@ -664,78 +720,103 @@ export const Dashboard = () => {
 
 const StatsCard = ({ label, value, suffix = "", icon: Icon, iconBg = "bg-slate-50", iconColor = "text-slate-500", trend, delay, onClick }: any) => (
   <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
+    initial={{ opacity: 0, scale: 0.9 }}
+    animate={{ opacity: 1, scale: 1 }}
     transition={{ delay, duration: 0.5 }}
     className="w-full"
   >
     <div 
       onClick={onClick}
-      className="p-5 bg-white rounded-[2.5rem] border border-indigo-100/50 shadow-sm hover:shadow-xl hover:border-indigo-200 transition-all duration-500 group cursor-pointer relative overflow-hidden flex flex-col justify-between min-h-[160px]"
+      className="p-6 bg-white rounded-[2.25rem] border border-slate-50 shadow-[0_8px_30px_rgba(0,0,0,0.02)] hover:shadow-[0_20px_50px_rgba(0,0,0,0.06)] hover:border-slate-100 transition-all duration-700 group cursor-pointer relative overflow-hidden flex flex-col justify-between min-h-[170px]"
     >
-      <div className="flex justify-between items-start relative z-10">
+    <div className="flex justify-between items-start relative z-10">
         <div className={cn(
-          "p-3 rounded-2xl shadow-sm transition-all duration-500",
-          iconBg, iconColor,
-          "group-hover:scale-110"
+          "p-4 rounded-[1.25rem] shadow-sm transition-all duration-500 border-b-2",
+          iconBg, iconColor, "border-black/5 group-hover:scale-110"
         )}>
-          <Icon size={20} strokeWidth={2.5} />
+          <Icon size={22} strokeWidth={2.5} />
         </div>
         <div className={cn(
-          "w-1.5 h-1.5 rounded-full mt-2",
-          trend === 'active' ? "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" : "bg-slate-200"
-        )} />
+          "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[8px] font-black uppercase tracking-widest",
+          trend === 'active' ? "bg-emerald-50 text-emerald-600" : "bg-slate-50 text-slate-400"
+        )}>
+          <div className={cn(
+            "w-1 h-1 rounded-full",
+            trend === 'active' ? "bg-emerald-500 animate-pulse" : "bg-slate-300"
+          )} />
+          {trend === 'active' ? 'Live' : 'Ready'}
+        </div>
       </div>
 
-      <div className="space-y-1 relative z-10 mt-4">
-        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em] leading-none group-hover:text-indigo-600 transition-colors uppercase">{label}</p>
-        <div className="flex flex-col items-start pt-1">
-          <p className="text-2xl font-black text-slate-900 tracking-tighter leading-none italic">
-            {typeof value === 'number' ? <AnimatedCounter value={value} /> : value}
-          </p>
-          {suffix && (
-            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1.5 opacity-60">
-              {suffix}
+      <div className="relative z-10 space-y-1">
+        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em] leading-none mb-1">{label}</h4>
+        <div className="flex items-baseline gap-2">
+            <span className="text-3xl font-black text-slate-900 tracking-tighter leading-none">
+                {typeof value === 'number' ? <AnimatedCounter value={value} /> : value}
             </span>
-          )}
+            <span className="text-[10px] font-bold text-slate-400 lowercase">{suffix}</span>
         </div>
       </div>
       
-      {/* Decorative background element */}
-      <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-indigo-50/50 rounded-full group-hover:scale-150 transition-transform duration-700 pointer-events-none" />
+      <div className="absolute -right-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.06] transition-all duration-700 group-hover:scale-125 group-hover:-rotate-12">
+        <Icon size={120} strokeWidth={1} />
+      </div>
     </div>
   </motion.div>
 );
 
 const LaunchBtn = ({ label, sub, icon: Icon, color, onClick }: any) => (
   <motion.button 
-    whileHover={{ scale: 1.02 }}
+    whileHover={{ scale: 1.02, y: -2 }}
     whileTap={{ scale: 0.98 }}
     onClick={onClick}
     className={cn(
-      "flex flex-col items-start gap-4 p-5 rounded-[2.5rem] transition-all duration-300 relative overflow-hidden group border",
-      color === 'indigo' ? "bg-white/60 backdrop-blur-xl border-white/60 shadow-[0_8px_30px_rgba(0,0,0,0.04)]" : "bg-white/60 backdrop-blur-xl border-white/60 shadow-[0_8px_30px_rgba(0,0,0,0.04)]"
+      "flex flex-col items-start gap-5 p-6 rounded-[2.25rem] transition-all duration-500 relative overflow-hidden group border-2 w-full",
+      "bg-white border-slate-50 shadow-[0_10px_35px_rgba(0,0,0,0.03)] hover:shadow-[0_20px_50px_rgba(0,0,0,0.08)]",
+      "hover:border-slate-100"
     )}
   >
     <div className={cn(
-      "absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500",
-      color === 'indigo' ? "bg-indigo-500" : "bg-blue-500"
+      "absolute -right-2 -top-2 w-24 h-24 blur-3xl opacity-0 group-hover:opacity-20 transition-all duration-700",
+      color === 'indigo' && "bg-indigo-400",
+      color === 'emerald' && "bg-emerald-400",
+      color === 'amber' && "bg-amber-400",
+      color === 'rose' && "bg-rose-400",
+      !['indigo', 'emerald', 'amber', 'rose'].includes(color) && "bg-blue-400"
     )} />
+    
     <div className={cn(
-      "p-3 rounded-2xl relative z-10 transition-all duration-500 shadow-sm border",
-      color === 'indigo' ? "bg-indigo-50 text-indigo-600 border-indigo-100" : "bg-blue-50 text-blue-600 border-blue-100"
+      "p-4 rounded-[1.25rem] relative z-10 transition-all duration-500 shadow-sm border-b-2",
+      color === 'indigo' && "bg-indigo-50 text-indigo-600 border-indigo-100 shadow-indigo-100/50",
+      color === 'emerald' && "bg-emerald-50 text-emerald-600 border-emerald-100 shadow-emerald-100/50",
+      color === 'amber' && "bg-amber-50 text-amber-600 border-amber-100 shadow-amber-100/50",
+      color === 'rose' && "bg-rose-50 text-rose-600 border-rose-100 shadow-rose-100/50",
+      !['indigo', 'emerald', 'amber', 'rose'].includes(color) && "bg-blue-50 text-blue-600 border-blue-100 shadow-blue-100/50"
     )}>
-        <Icon size={22} strokeWidth={2.5} />
+        <Icon size={24} strokeWidth={2.5} />
     </div>
-    <div className="text-left relative z-10 space-y-0.5">
-        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none opacity-80">{sub}</p>
-        <p className="text-sm font-black text-slate-900 tracking-tight leading-none">{label}</p>
+    
+    <div className="text-left relative z-10 space-y-1.5 mt-1">
+        <p className={cn(
+          "text-[10px] font-black uppercase tracking-widest leading-none",
+          color === 'indigo' && "text-indigo-400",
+          color === 'emerald' && "text-emerald-400",
+          color === 'amber' && "text-amber-400",
+          color === 'rose' && "text-rose-400",
+          !['indigo', 'emerald', 'amber', 'rose'].includes(color) && "text-blue-400"
+        )}>{sub}</p>
+        <p className="text-base font-black text-slate-900 tracking-tight leading-none italic uppercase">{label}</p>
     </div>
+
     <div className={cn(
-      "absolute -right-4 -bottom-4 opacity-[0.03] transition-all duration-500 group-hover:scale-125 group-hover:-rotate-12",
-      color === 'indigo' ? "text-indigo-600" : "text-blue-600"
+      "absolute -right-6 -bottom-6 opacity-[0.04] transition-all duration-700 group-hover:scale-110 group-hover:-rotate-6",
+      color === 'indigo' && "text-indigo-900",
+      color === 'emerald' && "text-emerald-900",
+      color === 'amber' && "text-amber-900",
+      color === 'rose' && "text-rose-900",
+      !['indigo', 'emerald', 'amber', 'rose'].includes(color) && "text-blue-900"
     )}>
-        <Icon size={80} />
+        <Icon size={100} strokeWidth={3} />
     </div>
   </motion.button>
 );

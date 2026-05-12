@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   ArrowLeft, 
   MapPin, 
@@ -28,6 +28,7 @@ import { Badge, Card, Button, Input, Textarea, Select, GlassCard } from '../comp
 import { patientService, caseService, sessionService, fileService } from '../services/db';
 import { MedicalRecordUpload } from '../components/patient/MedicalRecordUpload';
 import { FileList } from '../components/patient/FileList';
+import { PhysioInvoice } from '../components/PhysioInvoice';
 import { formatDate, formatCurrency, cn } from '../utils/helpers';
 import { generateReceiptPDF, shareOnWhatsApp, generateAppointmentMessage, generatePaymentMessage } from '../utils/sharing';
 import { toast } from 'sonner';
@@ -174,6 +175,10 @@ export const PatientDetail = () => {
   const [patient, setPatient] = useState<any>(null);
   const [cases, setCases] = useState<any[]>([]);
   const [files, setFiles] = useState<any[]>([]);
+  const [totalDue, setTotalDue] = useState(0);
+  const [totalSessions, setTotalSessions] = useState(0);
+  const [showBill, setShowBill] = useState(false);
+  const [pendingSessions, setPendingSessions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -181,12 +186,21 @@ export const PatientDetail = () => {
 
     const fetchData = async () => {
       try {
-        const [p, c] = await Promise.all([
+        const [p, c, s] = await Promise.all([
           patientService.getPatient(patientId),
-          caseService.getCases(patientId)
+          caseService.getCases(patientId),
+          sessionService.getPatientTransactions(patientId)
         ]);
         setPatient(p);
         setCases(c || []);
+        
+        // Calculate stats from transactions
+        const sessions = s || [];
+        setTotalSessions(sessions.length);
+        const pending = sessions.filter((x: any) => x.paymentStatus === 'Pending');
+        setPendingSessions(pending);
+        const due = pending.reduce((acc: number, x: any) => acc + (x.sessionFee || 500), 0);
+        setTotalDue(due);
       } catch (err) {
         console.error(err);
         toast.error('Failed to load patient data');
@@ -215,6 +229,17 @@ export const PatientDetail = () => {
     }
   };
 
+  const handleUpdateStatus = async () => {
+    const newStatus = patient.status === 'Completed' ? 'Active' : 'Completed';
+    try {
+      await patientService.updatePatientStatus(patientId!, newStatus);
+      setPatient({ ...patient, status: newStatus });
+      toast.success(`Patient marked as ${newStatus}`);
+    } catch (err) {
+      toast.error('Failed to update status');
+    }
+  };
+
   const isCompleted = patient?.status === 'Completed';
 
   if (loading) return (
@@ -229,162 +254,229 @@ export const PatientDetail = () => {
   if (!patient) return <div className="p-10 text-center text-slate-500 font-bold">Record not found</div>;
 
   return (
-    <div className="space-y-8 pb-10">
-      <div className="flex items-center justify-between px-2">
-        <div className="flex items-center gap-4">
-          <button onClick={() => navigate('/patients')} className="p-3 bg-white/60 backdrop-blur-xl border border-slate-200/50 rounded-2xl text-slate-400 hover:text-slate-900 transition-all shadow-sm active:scale-95 cursor-pointer">
-            <ArrowLeft size={20} strokeWidth={2.5} />
+    <div className="space-y-6 pb-10 pt-2">
+      <div className="flex items-center justify-between px-4">
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => navigate('/patients')} 
+            className="p-2.5 bg-white border border-slate-100 rounded-xl text-slate-400 hover:text-slate-900 transition-all shadow-sm active:scale-95 cursor-pointer group"
+          >
+            <ArrowLeft size={18} strokeWidth={2.5} className="group-hover:-translate-x-0.5 transition-transform" />
           </button>
           <div className="space-y-0.5">
-            <p className="text-[9px] font-black text-blue-500 uppercase tracking-widest leading-none">Record Index</p>
-            <h1 className="text-xl font-black text-slate-900 tracking-tight leading-none italic">Clinical <span className="not-italic text-blue-900">Context</span></h1>
+            <h1 className="text-xl font-black text-slate-900 tracking-tight leading-none">Perspective</h1>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
             {!isCompleted && (
-                <>
-                    <button 
-                        onClick={() => navigate(`/patients/${patientId}/edit`)} 
-                        className="p-3 bg-white/50 backdrop-blur-md border border-white/60 text-slate-400 hover:text-blue-600 rounded-2xl transition-all shadow-sm active:scale-95 cursor-pointer"
-                    >
-                        <Edit2 size={18} strokeWidth={2.5} />
-                    </button>
-                    <button 
-                        onClick={handleDeletePatient} 
-                        className="p-3 bg-white/50 backdrop-blur-md border border-white/60 text-slate-400 hover:text-red-500 rounded-2xl transition-all shadow-sm active:scale-95 cursor-pointer"
-                    >
-                        <Trash2 size={18} strokeWidth={2.5} />
-                    </button>
-                </>
+                <button 
+                    onClick={() => navigate(`/patients/${patientId}/edit`)} 
+                    className="w-10 h-10 bg-white border border-slate-100 text-slate-400 hover:text-indigo-600 rounded-xl transition-all shadow-sm flex items-center justify-center active:scale-95 cursor-pointer"
+                    title="Edit Record"
+                >
+                    <Edit2 size={16} />
+                </button>
             )}
+            <button 
+                onClick={handleUpdateStatus} 
+                className={cn(
+                    "h-10 px-4 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all shadow-sm active:scale-95 cursor-pointer border flex items-center gap-1.5",
+                    isCompleted 
+                      ? "bg-emerald-50 text-emerald-600 border-emerald-100" 
+                      : "bg-indigo-50 text-indigo-600 border-indigo-100"
+                )}
+            >
+                {isCompleted ? <CheckCircle2 size={12} /> : <Activity size={12} />}
+                {isCompleted ? 'Completed' : 'Active'}
+            </button>
         </div>
       </div>
 
-      {/* Patient Profile Widget - Dark UI for Premium feel */}
       <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-        className="px-2"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="px-4 space-y-4"
       >
-        <div className="relative p-7 rounded-[3rem] bg-slate-900 text-white overflow-hidden shadow-[0_20px_40px_-15px_rgba(15,23,42,0.6)]">
-           <div className="relative z-10 flex flex-col gap-6">
-              <div className="space-y-4">
-                <div className="flex items-center gap-4">
-                   <div className="w-16 h-16 bg-gradient-to-br from-white/20 to-white/5 rounded-[1.25rem] backdrop-blur-xl border border-white/20 shadow-inner flex items-center justify-center font-black text-2xl text-white">
-                      {patient.name?.[0] || 'P'}
-                   </div>
-                   <div className="space-y-1">
-                      <h2 className="text-3xl font-black font-display tracking-tight leading-none italic text-blue-50">{patient.name}</h2>
-                      <div className="flex gap-2">
-                         <Badge className="bg-white/5 text-blue-200 border-white/10 text-[9px] uppercase tracking-widest leading-none py-1.5">{patient.gender}</Badge>
-                         <Badge className="bg-white/5 text-blue-200 border-white/10 text-[9px] uppercase tracking-widest leading-none py-1.5">{patient.age}Y</Badge>
-                      </div>
-                   </div>
+        {/* Simple Clinical Profile Card */}
+        <div className="bg-white border border-slate-100 rounded-[2rem] p-5 flex gap-5 items-center shadow-sm relative overflow-hidden group">
+            {/* Visual Identity */}
+            <div className="relative shrink-0">
+                <div className="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center text-white text-2xl font-black">
+                    {(patient.name?.[0] || 'P').toUpperCase()}
                 </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-3 pt-2">
-                 <a href={`tel:${patient.phone}`} className="flex items-center gap-3 p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all cursor-pointer">
-                    <div className="p-2 bg-blue-500/20 text-blue-400 rounded-xl shadow-inner">
-                       <Phone size={16} strokeWidth={2.5} />
-                    </div>
-                    <div className="space-y-0.5 min-w-0">
-                       <p className="text-[8px] font-black text-blue-300/60 uppercase tracking-widest leading-none">Contact</p>
-                       <p className="text-xs font-bold text-blue-50 truncate">{patient.phone}</p>
-                    </div>
-                 </a>
-                 <div className="flex items-center gap-3 p-4 bg-white/5 border border-white/10 rounded-2xl cursor-default">
-                    <div className="p-2 bg-indigo-500/20 text-indigo-400 rounded-xl shadow-inner">
-                       <MapPin size={16} strokeWidth={2.5} />
-                    </div>
-                    <div className="space-y-0.5 min-w-0">
-                       <p className="text-[8px] font-black text-indigo-300/60 uppercase tracking-widest leading-none">Location</p>
-                       <p className="text-xs font-bold text-blue-50 truncate">{patient.address}</p>
-                    </div>
-                 </div>
-              </div>
-           </div>
+            </div>
 
-           {/* Decorative elements */}
-           <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-blue-600/20 rounded-full blur-3xl opacity-50" />
-           <div className="absolute left-1/4 top-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl opacity-30" />
+            {/* Identity Details */}
+            <div className="flex-1 space-y-2 min-w-0">
+                <div className="space-y-0.5">
+                    <h2 className="text-xl font-black tracking-tight text-slate-900 capitalize truncate leading-none">{patient.name}</h2>
+                    <div className="flex items-center gap-2">
+                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{patient.age}Y • {patient.gender}</span>
+                    </div>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                    <div className="flex items-center gap-2 text-slate-500">
+                        <Phone size={10} className="text-slate-300" />
+                        <span className="text-[10px] font-bold truncate">{patient.phone}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-slate-500">
+                        <MapPin size={10} className="text-slate-300" />
+                        <span className="text-[10px] font-bold truncate">{patient.address}</span>
+                    </div>
+                </div>
+            </div>
         </div>
+
+        {/* Clean Stats Grid */}
+        <div className="grid grid-cols-2 gap-3 pb-2">
+            <div className="bg-white border border-slate-100 rounded-[2rem] p-5 shadow-sm active:scale-95 transition-all group">
+                <div className="flex flex-col gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                        <Clock size={18} />
+                    </div>
+                    <div>
+                        <p className="text-[7px] font-black uppercase tracking-[0.2em] text-slate-400">Total Sessions</p>
+                        <p className="text-2xl font-black text-slate-900 italic tracking-tight">{totalSessions}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div 
+                onClick={() => totalDue > 0 && setShowBill(true)}
+                className={cn(
+                    "bg-white border border-slate-100 rounded-[2rem] p-5 shadow-sm transition-all active:scale-95 cursor-pointer group relative",
+                    totalDue > 0 ? "hover:border-rose-200" : ""
+                )}
+            >
+                <div className="flex flex-col gap-3">
+                    <div className={cn(
+                        "w-9 h-9 rounded-xl flex items-center justify-center transition-colors",
+                        totalDue > 0 ? "bg-rose-50 text-rose-600" : "bg-slate-50 text-slate-400"
+                    )}>
+                        <Wallet size={18} />
+                    </div>
+                    <div className="space-y-0.5">
+                        <p className="text-[7px] font-black uppercase tracking-[0.2em] text-slate-400">Ledger Due</p>
+                        <div className="flex items-center justify-between gap-1">
+                            <p className={cn("text-xl font-black italic tracking-tighter", totalDue > 0 ? "text-rose-600" : "text-slate-900")}>
+                                {formatCurrency(totalDue)}
+                            </p>
+                            {totalDue > 0 && (
+                                <div className="p-1.5 bg-slate-900 text-white rounded-lg group-hover:scale-110 transition-transform shadow-sm">
+                                    <FileText size={10} />
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {/* Legal Invoice Engine Integration */}
+        <PhysioInvoice
+            isOpen={showBill}
+            onClose={() => setShowBill(false)}
+            patient={patient}
+            dues={{
+                total: totalDue,
+                count: pendingSessions.length,
+                sessions: pendingSessions
+            }}
+        />
+
+        {isCompleted && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-emerald-50 border border-emerald-100 rounded-[2rem] p-5 flex items-center gap-4 shadow-sm"
+          >
+            <div className="w-12 h-12 bg-emerald-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-200 shrink-0">
+                <CheckCircle2 size={24} />
+            </div>
+            <div>
+                <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest leading-none mb-1.5">Lifecycle Milestone</p>
+                <p className="text-lg font-black text-emerald-950 leading-none italic">Protocol Successfully Completed</p>
+            </div>
+          </motion.div>
+        )}
       </motion.div>
 
       {/* Diagnostic Records */}
-      <section className="space-y-6 px-2">
+      <section className="space-y-6 px-4">
         <div className="flex items-center gap-2">
-            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
-            <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none">Diagnostic Matrix</h2>
+            <div className="w-1 h-3 bg-indigo-500 rounded-full" />
+            <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none">Diagnostic Assets</h2>
         </div>
         
-        <MedicalRecordUpload 
-          patientId={patientId!} 
-          onSuccess={() => {
-            // Subscription handles real-time update
-            console.log('[Treatment] Upload success callback');
-          }} 
-        />
-        
-        <FileList 
-          patientId={patientId!} 
-          files={files} 
-          onDeleteSuccess={() => {
-            // Subscription handles real-time update
-          }}
-        />
+        <div className="space-y-3">
+          <MedicalRecordUpload 
+            patientId={patientId!} 
+            onSuccess={() => {}} 
+          />
+          
+          <FileList 
+            patientId={patientId!} 
+            files={files} 
+            onDeleteSuccess={() => {}}
+          />
+        </div>
       </section>
 
       {/* Treatment Protocols */}
-      <section className="space-y-4 px-2 pt-2">
+      <section className="space-y-5 px-4 pt-4">
         <div className="flex items-center justify-between">
            <div className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full shadow-[0_0_8px_rgba(99,102,241,0.5)]" />
-                <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none">Treatment cycles</h2>
+                <div className="w-1 h-3 bg-indigo-500 rounded-full" />
+                <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none">Care Cycles</h2>
            </div>
            {!isCompleted && (
-              <Button size="sm" variant="ghost" className="text-[9px] font-black uppercase tracking-widest text-blue-600 p-0 hover:bg-transparent" onClick={() => navigate(`/patients/${patientId}/cases/add`)}>
-                <Plus size={14} className="mr-1" /> New Case
-              </Button>
+              <button 
+                onClick={() => navigate(`/patients/${patientId}/cases/add`)}
+                className="flex items-center gap-1.5 py-1 px-3 bg-indigo-50 text-indigo-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-100 transition-colors"
+              >
+                <Plus size={12} strokeWidth={3} />
+                Initialize
+              </button>
            )}
         </div>
 
         {cases.length === 0 ? (
-          <GlassCard className="flex flex-col items-center justify-center py-12 text-center space-y-4 border-dashed border-slate-200">
-             <div className="w-14 h-14 bg-white/50 rounded-2xl flex items-center justify-center text-slate-300 border border-white">
-               <Activity size={26} />
+          <div className="flex flex-col items-center justify-center py-12 text-center bg-slate-50/50 border border-dashed border-slate-200 rounded-[2rem] space-y-4">
+             <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-slate-300 shadow-sm border border-slate-100">
+               <Activity size={26} strokeWidth={1.5} />
              </div>
              <div className="space-y-1">
-                <p className="text-slate-900 font-bold text-sm tracking-tight text-center">No Active Cycles</p>
-                <p className="text-slate-400 text-[10px] font-medium uppercase tracking-widest text-center">Baseline not established</p>
+                <p className="text-slate-900 font-bold text-sm tracking-tight">No Active Protocols</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Awaiting assessment baseline</p>
              </div>
-             <Button variant="outline" size="sm" onClick={() => navigate(`/patients/${patientId}/cases/add`)} className="rounded-xl mt-2 bg-white border-slate-200">Initialize Case</Button>
-          </GlassCard>
+          </div>
         ) : (
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 gap-3">
             {cases.map((trCase) => (
-              <GlassCard 
+              <div 
                 key={trCase.id} 
-                className="!p-5 group hover:border-blue-300 transition-all border-white/60 relative overflow-hidden"
+                className="group relative bg-white border border-slate-100 rounded-[2rem] p-5 hover:border-indigo-200 hover:shadow-xl hover:shadow-indigo-500/5 transition-all duration-300 cursor-pointer"
                 onClick={() => navigate(`/patients/${patientId}/cases/${trCase.id}`)}
               >
-                <div className="absolute right-0 top-0 w-32 h-32 bg-blue-500/10 rounded-full blur-[40px] opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-                <div className="flex items-start justify-between relative z-10">
-                  <div className="space-y-3">
-                    <h3 className="font-bold text-slate-900 group-hover:text-blue-700 transition-colors leading-tight tracking-tight text-base italic">{trCase.diagnosis}</h3>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-3 flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <Badge variant={trCase.status === 'Active' ? 'success' : 'neutral'} className="shadow-none">
-                        {trCase.status}
-                      </Badge>
-                      <Badge variant="info" className="bg-slate-100 text-slate-400 border-none shadow-none">{trCase.condition}</Badge>
+                       <Badge className={cn(
+                         "py-0.5 text-[8px] font-black uppercase tracking-widest",
+                         trCase.status === 'Active' ? "bg-indigo-50 text-indigo-600 border-indigo-100" : "bg-slate-50 text-slate-400 border-slate-100"
+                       )}>
+                         {trCase.status}
+                       </Badge>
+                       <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">{trCase.condition}</span>
                     </div>
+                    <h3 className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors leading-tight tracking-tight text-lg italic truncate pr-4">{trCase.diagnosis}</h3>
                   </div>
-                  <div className="w-10 h-10 rounded-[1.25rem] bg-white/80 border border-white flex items-center justify-center group-hover:bg-blue-500 group-hover:border-blue-400 group-hover:scale-110 group-hover:shadow-[0_8px_20px_rgba(59,130,246,0.3)] transition-all duration-300">
-                    <ChevronRight size={18} className="text-slate-400 group-hover:text-white" />
+                  <div className="w-10 h-10 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center group-hover:bg-slate-900 group-hover:text-white group-hover:border-slate-900 transition-all duration-300 shrink-0">
+                    <ChevronRight size={18} strokeWidth={3} />
                   </div>
                 </div>
-              </GlassCard>
+              </div>
             ))}
           </div>
         )}
