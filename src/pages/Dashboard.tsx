@@ -29,6 +29,7 @@ export const Dashboard = () => {
   const navigate = useNavigate();
   const { searchQuery } = useSearch();
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [showAllVisits, setShowAllVisits] = useState(false);
   const [stats, setStats] = useState({
     todaySessions: 0,
     activePatients: 0,
@@ -37,6 +38,17 @@ export const Dashboard = () => {
     totalSessions: 0,
     monthlySessions: 0
   });
+
+  const format12Hour = (timeStr?: string) => {
+    if (!timeStr) return 'Entry';
+    const [h, m] = timeStr.split(':');
+    if (!h || !m) return timeStr;
+    let hour = parseInt(h);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    hour = hour % 12;
+    hour = hour ? hour : 12; 
+    return `${hour}:${m} ${ampm}`;
+  };
 
   const [visits, setVisits] = useState<any[]>([]);
   const [todayVisits, setTodayVisits] = useState<any[]>([]);
@@ -343,7 +355,7 @@ export const Dashboard = () => {
           </motion.div>
         ) : (
           <div className="space-y-4">
-             {visits
+             {(showAllVisits ? visits : visits.slice(0, 3))
                .filter(visit => 
                  !searchQuery || 
                  visit.patientName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -355,7 +367,7 @@ export const Dashboard = () => {
                  
                  return (
                    <motion.div
-                    key={visit.id}
+                    key={`${visit.id || 'visit'}-${idx}`}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 + idx * 0.05, type: 'spring', stiffness: 200, damping: 20 }}
@@ -398,7 +410,7 @@ export const Dashboard = () => {
                                             <div className="flex items-center gap-3">
                                                 <div className="flex items-center gap-1.5 text-slate-400">
                                                     <Clock size={11} className={cn(isScheduled ? "text-indigo-400" : "text-emerald-400")} />
-                                                    <p className="text-[10px] font-black uppercase tracking-widest leading-none">{visit.time || 'Entry'}</p>
+                                                    <p className="text-[10px] font-black uppercase tracking-widest leading-none">{format12Hour(visit.time)}</p>
                                                 </div>
                                                 <span className="w-1 h-1 bg-slate-200 rounded-full" />
                                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight truncate max-w-[100px]">
@@ -441,6 +453,36 @@ export const Dashboard = () => {
                    </motion.div>
                  );
                })}
+             
+             {!showAllVisits && visits.length > 3 && (
+                 <motion.div 
+                     className="flex justify-center mt-2"
+                     initial={{ opacity: 0 }}
+                     animate={{ opacity: 1 }}
+                 >
+                     <button 
+                         onClick={() => setShowAllVisits(true)}
+                         className="px-6 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-full text-xs font-black uppercase tracking-widest transition-colors cursor-pointer active:scale-95 shadow-sm inline-flex items-center gap-2"
+                     >
+                         See all {visits.length} schedules
+                     </button>
+                 </motion.div>
+             )}
+             
+             {showAllVisits && visits.length > 3 && (
+                 <motion.div 
+                     className="flex justify-center mt-2"
+                     initial={{ opacity: 0 }}
+                     animate={{ opacity: 1 }}
+                 >
+                     <button 
+                         onClick={() => setShowAllVisits(false)}
+                         className="px-6 py-2 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-full text-xs font-black uppercase tracking-widest transition-colors cursor-pointer active:scale-95 shadow-sm inline-flex items-center gap-2"
+                     >
+                         Show less
+                     </button>
+                 </motion.div>
+             )}
           </div>
         )}
       </motion.section>
@@ -531,7 +573,7 @@ export const Dashboard = () => {
                 ) : (
                   todayVisits.map((visit, idx) => (
                     <motion.div
-                      key={visit.id}
+                      key={`${visit.id || 'today'}-${idx}`}
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: idx * 0.05 }}
@@ -612,7 +654,7 @@ export const Dashboard = () => {
                 ) : (
                   monthVisits.map((visit, idx) => (
                     <motion.div
-                      key={visit.id}
+                      key={`${visit.id || 'month'}-${idx}`}
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: idx * 0.05 }}

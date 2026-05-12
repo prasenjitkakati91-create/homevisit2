@@ -37,6 +37,40 @@ export const Payments = () => {
     const [transactions, setTransactions] = useState<any[]>([]);
     const [filter, setFilter] = useState<'all' | 'Paid' | 'Pending'>('all');
     const [txLoading, setTxLoading] = useState(true);
+    const [showAllTx, setShowAllTx] = useState(false);
+    const [selectedMonth, setSelectedMonth] = useState(() => new Date().toISOString().substring(0, 7));
+
+    const computedStats = React.useMemo(() => {
+        let monthlyEarnings = 0;
+        let pendingPayments = 0;
+        
+        transactions.forEach(tx => {
+            const isCompleted = !tx.treatmentDone || !tx.treatmentDone.startsWith('Scheduled:');
+            const inMonth = tx.date && tx.date.startsWith(selectedMonth);
+            
+            if (inMonth && isCompleted) {
+                if (tx.paymentStatus === 'Paid') {
+                    monthlyEarnings += Number(tx.amountPaid) || 0;
+                }
+                if (tx.paymentStatus === 'Pending') {
+                    pendingPayments += (Number(tx.amountPaid) || Number(tx.sessionFee) || 500);
+                }
+            }
+        });
+        
+        return { monthlyEarnings, pendingPayments };
+    }, [transactions, selectedMonth]);
+
+    const format12Hour = (timeStr?: string) => {
+        if (!timeStr) return '';
+        const [h, m] = timeStr.split(':');
+        if (!h || !m) return timeStr;
+        let hour = parseInt(h);
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        hour = hour % 12;
+        hour = hour ? hour : 12; 
+        return `${hour}:${m} ${ampm}`;
+    };
 
     useEffect(() => {
         const fetchInitialData = async () => {
@@ -88,75 +122,64 @@ export const Payments = () => {
         const matchesSearch = !searchQuery || 
                              tx.patientName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                              tx.diagnosis?.toLowerCase().includes(searchQuery.toLowerCase());
+        const inMonth = tx.date && tx.date.startsWith(selectedMonth);
+        const matchesFilter = filter === 'all' || tx.paymentStatus === filter;
         
-        if (filter === 'all') return matchesSearch;
-        return matchesSearch && tx.paymentStatus === filter;
+        return matchesSearch && inMonth && matchesFilter;
     });
 
     return (
-        <div className="space-y-10 pb-6">
-            {/* Header */}
-            <div className="flex items-center justify-between px-1">
-                <div className="space-y-1.5">
-                    <p className="text-[9px] font-black text-blue-500 uppercase tracking-widest leading-none">Financial Ledger</p>
-                    <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-none italic font-display">Practice <span className="not-italic text-blue-800">Economy</span></h1>
+        <div className="space-y-8 pb-6">
+            {/* Grand Financial Overview */}
+            <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white relative overflow-hidden shadow-2xl shadow-indigo-900/20 flex flex-col gap-8">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/20 blur-[80px] rounded-full pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-48 h-48 bg-emerald-500/10 blur-[60px] rounded-full pointer-events-none" />
+                
+                <div className="relative z-10 flex items-start justify-between">
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 leading-none">Gross Revenue</p>
+                        </div>
+                        <h2 className="text-4xl font-black font-mono tracking-tighter text-white">
+                            {loading ? '---' : formatCurrency(computedStats.monthlyEarnings)}
+                        </h2>
+                    </div>
+                    <div className="flex flex-col items-end gap-3">
+                        <input
+                            type="month"
+                            value={selectedMonth}
+                            onChange={(e) => setSelectedMonth(e.target.value)}
+                            className="bg-white/10 text-white border border-white/10 rounded-xl px-2.5 py-1.5 text-xs font-bold focus:ring-0 outline-none backdrop-blur-md appearance-none"
+                        />
+                        <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/10 shadow-inner hidden sm:flex">
+                            <TrendingUp size={20} strokeWidth={2.5} className="text-emerald-400" />
+                        </div>
+                    </div>
                 </div>
-                <div className="flex gap-2">
-                    <button className="w-12 h-12 flex items-center justify-center bg-white/60 backdrop-blur-md border border-slate-200/50 rounded-2xl text-slate-400 hover:text-blue-600 active:scale-95 transition-all shadow-[0_2px_10px_rgba(0,0,0,0.03)] cursor-pointer">
-                        <TrendingUp size={20} strokeWidth={2.5}/>
+
+                <div className="relative z-10 grid grid-cols-2 gap-4">
+                    <button 
+                        onClick={() => setFilter(filter === 'Pending' ? 'all' : 'Pending')}
+                        className={cn(
+                            "p-5 rounded-[1.5rem] border backdrop-blur-sm text-left transition-all group active:scale-95 cursor-pointer relative overflow-hidden",
+                            filter === 'Pending' ? "bg-amber-500 border-amber-400 shadow-[0_10px_30px_rgba(245,158,11,0.3)] text-amber-950" : "bg-white/5 border-white/5 hover:bg-white/10"
+                        )}
+                    >
+                        <p className={cn("text-[9px] font-black uppercase tracking-widest leading-none mb-1.5 transition-colors", filter === 'Pending' ? "text-amber-900" : "text-amber-400")}>Unsettled</p>
+                        <p className={cn("text-xl font-bold font-mono transition-colors", filter === 'Pending' ? "text-amber-950" : "text-white")}>{loading ? '---' : formatCurrency(computedStats.pendingPayments)}</p>
+                    </button>
+                    <button 
+                        onClick={() => setFilter(filter === 'Paid' ? 'all' : 'Paid')}
+                        className={cn(
+                            "p-5 rounded-[1.5rem] border backdrop-blur-sm text-left transition-all group active:scale-95 cursor-pointer relative overflow-hidden",
+                            filter === 'Paid' ? "bg-emerald-500 border-emerald-400 shadow-[0_10px_30px_rgba(16,185,129,0.3)] text-emerald-950" : "bg-white/5 border-white/5 hover:bg-white/10"
+                        )}
+                    >
+                        <p className={cn("text-[9px] font-black uppercase tracking-widest leading-none mb-1.5 transition-colors", filter === 'Paid' ? "text-emerald-900" : "text-emerald-400")}>Received</p>
+                        <p className={cn("text-xl font-bold font-mono transition-colors", filter === 'Paid' ? "text-emerald-950" : "text-white")}>{loading ? '---' : formatCurrency(computedStats.monthlyEarnings)}</p>
                     </button>
                 </div>
-            </div>
-
-            {/* Quick Stats Grid */}
-            <div className="grid grid-cols-2 gap-4">
-                <GlassCard 
-                    className={cn(
-                        "!p-6 relative overflow-hidden group cursor-pointer transition-all active:scale-95",
-                        filter === 'Paid' ? "bg-gradient-to-br from-emerald-500 to-teal-600 border-none shadow-[0_8px_30px_rgba(16,185,129,0.3)]" : ""
-                    )}
-                    onClick={() => setFilter(filter === 'Paid' ? 'all' : 'Paid')}
-                >
-                    <div className="relative z-10 space-y-4">
-                        <div className={cn(
-                            "w-10 h-10 rounded-2xl flex items-center justify-center transition-colors shadow-inner",
-                            filter === 'Paid' ? "bg-white/20 text-white" : "bg-emerald-50 text-emerald-500"
-                        )}>
-                            <TrendingUp size={18} strokeWidth={2.5} />
-                        </div>
-                        <div className="space-y-1">
-                            <p className={cn("text-[10px] font-black uppercase tracking-widest leading-none", filter === 'Paid' ? "text-emerald-100" : "text-slate-400")}>Revenue</p>
-                            <p className={cn("text-2xl font-black font-mono tracking-tighter leading-none", filter === 'Paid' ? "text-white" : "text-emerald-600")}>
-                                {loading ? '---' : formatCurrency(stats?.monthlyEarnings || 0)}
-                            </p>
-                        </div>
-                    </div>
-                    {filter === 'Paid' && <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-2xl rounded-full pointer-events-none" />}
-                </GlassCard>
-                
-                <GlassCard 
-                    className={cn(
-                        "!p-6 relative overflow-hidden cursor-pointer transition-all active:scale-95",
-                        filter === 'Pending' ? "bg-gradient-to-br from-amber-400 to-orange-500 border-none shadow-[0_8px_30px_rgba(245,158,11,0.3)]" : ""
-                    )}
-                    onClick={() => setFilter(filter === 'Pending' ? 'all' : 'Pending')}
-                >
-                    <div className="relative z-10 space-y-4">
-                        <div className={cn(
-                            "w-10 h-10 rounded-2xl flex items-center justify-center transition-colors shadow-inner",
-                            filter === 'Pending' ? "bg-white/20 text-white" : "bg-amber-50 text-amber-500"
-                        )}>
-                            <Clock size={18} strokeWidth={2.5} />
-                        </div>
-                        <div className="space-y-1">
-                            <p className={cn("text-[10px] font-black uppercase tracking-widest leading-none", filter === 'Pending' ? "text-amber-100" : "text-slate-400")}>Pending</p>
-                            <p className={cn("text-2xl font-black font-mono tracking-tighter leading-none", filter === 'Pending' ? "text-white" : "text-amber-500")}>
-                                {loading ? '---' : formatCurrency(stats?.pendingPayments || 0)}
-                            </p>
-                        </div>
-                    </div>
-                    {filter === 'Pending' && <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-2xl rounded-full pointer-events-none" />}
-                </GlassCard>
             </div>
 
             {/* Bill Generation Authority */}
@@ -327,48 +350,74 @@ export const Payments = () => {
                         </GlassCard>
                     ) : (
                         <AnimatePresence mode="popLayout">
-                            {filteredTransactions.map((tx, idx) => (
+                            <div className="bg-white rounded-3xl p-2 shadow-sm border border-slate-100/60 flex flex-col">
+                            {(showAllTx ? filteredTransactions : filteredTransactions.slice(0, 5)).map((tx, idx) => (
                                 <motion.div
-                                    key={tx.id}
+                                    key={`${tx.id}-${idx}`}
                                     layout
                                     initial={{ opacity: 0, y: 10, scale: 0.98 }}
                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                     exit={{ opacity: 0, scale: 0.95 }}
                                     transition={{ delay: idx * 0.03 }}
                                 >
-                                    <GlassCard 
-                                        className="!p-5 hover:border-blue-300 transition-all cursor-pointer group"
+                                    <div 
+                                        className={cn("flex items-center justify-between p-4 hover:bg-slate-50 transition-all cursor-pointer group border-b border-slate-50 last:border-0", idx === 0 && "rounded-t-2xl", idx === (showAllTx ? filteredTransactions.length - 1 : Math.min(filteredTransactions.length, 5) - 1) && "rounded-b-2xl")}
                                         onClick={() => navigate(`/patients/${tx.patientId}/cases/${tx.caseId}`)}
                                     >
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-4">
-                                                <div className={cn(
-                                                    "w-14 h-14 rounded-[1.25rem] flex items-center justify-center text-white transition-all shadow-inner",
-                                                    tx.paymentStatus === 'Paid' ? "bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-[0_4px_15px_rgba(16,185,129,0.3)]" : "bg-gradient-to-br from-slate-800 to-slate-900 shadow-[0_4px_15px_rgba(15,23,42,0.3)]"
-                                                )}>
-                                                    {tx.paymentStatus === 'Paid' ? <CheckCircle size={22} strokeWidth={2.5}/> : <Clock size={22} strokeWidth={2.5} />}
-                                                </div>
-                                                <div className="space-y-1">
-                                                    <h4 className="text-base font-bold text-slate-900 group-hover:text-blue-700 transition-colors tracking-tight leading-none italic capitalize">{tx.patientName || 'Clinical Record'}</h4>
-                                                    <div className="flex items-center gap-2 pt-1">
-                                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none bg-slate-100 rounded-md px-1.5 py-0.5">{tx.date}</span>
-                                                        <span className="w-1 h-1 bg-slate-300 rounded-full" />
-                                                        <span className="text-[9px] font-black text-blue-500 uppercase tracking-widest leading-none bg-blue-50 rounded-md px-1.5 py-0.5 max-w-[120px] truncate">{tx.diagnosis || 'Therapy'}</span>
-                                                    </div>
-                                                </div>
+                                        <div className="flex items-center gap-4">
+                                            <div className="flex flex-col items-center justify-center w-10">
+                                                <span className="text-[10px] font-black uppercase text-slate-400 leading-none">{new Date(tx.date).toLocaleDateString('en-US', { month: 'short' })}</span>
+                                                <span className="text-lg font-black text-slate-700 leading-none">{new Date(tx.date).getDate()}</span>
+                                                {tx.time && <span className="text-[7.5px] font-black uppercase text-slate-400 mt-0.5 tracking-tighter leading-none">{format12Hour(tx.time)}</span>}
                                             </div>
-                                            <div className="text-right space-y-1.5 flex flex-col items-end">
-                                                <p className="text-base font-black text-slate-900 font-mono tracking-tighter leading-none">
-                                                    {formatCurrency(tx.amountPaid || tx.sessionFee || 500)}
-                                                </p>
-                                                <Badge variant={tx.paymentStatus === 'Paid' ? 'success' : 'warning'} className="text-[8px] px-2 py-0.5 uppercase shadow-none border-none">
-                                                    {tx.paymentStatus}
-                                                </Badge>
+                                            <div className="w-[1px] h-8 bg-slate-100" />
+                                            <div className="space-y-1">
+                                                <h4 className="text-sm font-black text-slate-900 group-hover:text-blue-700 transition-colors tracking-tight leading-none capitalize">{tx.patientName || 'Clinical Record'}</h4>
+                                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">{tx.diagnosis || 'Therapy'}</p>
                                             </div>
                                         </div>
-                                    </GlassCard>
+                                        <div className="text-right space-y-1.5 flex flex-col items-end">
+                                            <p className="text-sm font-black text-slate-900 font-mono tracking-tighter leading-none">
+                                                {formatCurrency(tx.amountPaid || tx.sessionFee || 500)}
+                                            </p>
+                                            <span className={cn("text-[7px] font-black uppercase tracking-[0.2em] px-1.5 py-0.5 rounded-sm line-height-none", tx.paymentStatus === 'Paid' ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600")}>
+                                                {tx.paymentStatus}
+                                            </span>
+                                        </div>
+                                    </div>
                                 </motion.div>
                             ))}
+                            </div>
+                            
+                            {!showAllTx && filteredTransactions.length > 5 && (
+                                <motion.div 
+                                    className="flex justify-center mt-2"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                >
+                                    <button 
+                                        onClick={() => setShowAllTx(true)}
+                                        className="px-6 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-full text-xs font-black uppercase tracking-widest transition-colors cursor-pointer active:scale-95 shadow-sm"
+                                    >
+                                        See all {filteredTransactions.length} records
+                                    </button>
+                                </motion.div>
+                            )}
+                            
+                            {showAllTx && filteredTransactions.length > 5 && (
+                                <motion.div 
+                                    className="flex justify-center mt-2"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                >
+                                    <button 
+                                        onClick={() => setShowAllTx(false)}
+                                        className="px-6 py-2 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-full text-xs font-black uppercase tracking-widest transition-colors cursor-pointer active:scale-95 shadow-sm"
+                                    >
+                                        Show Less
+                                    </button>
+                                </motion.div>
+                            )}
                         </AnimatePresence>
                     )}
                 </div>

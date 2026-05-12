@@ -14,7 +14,7 @@ const BottomNav = () => {
   const navItems = [
     { to: '/', icon: Home, label: 'Home' },
     { to: '/patients', icon: Users, label: 'Patients' },
-    { to: '/calendar', icon: Calendar, label: 'Calendar' },
+    { to: '/calendar', icon: Calendar, label: 'Appointments' },
     { to: '/payments', icon: CreditCard, label: 'Ledger' },
   ];
 

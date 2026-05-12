@@ -93,20 +93,20 @@ export const AddPatient = () => {
           onSubmit={handleSubmit} 
           className="space-y-10 px-4"
         >
-          <GlassCard className="!p-8 space-y-8 border-2 border-slate-50 shadow-[0_20px_60px_rgba(0,0,0,0.02)] rounded-[2.75rem] overflow-hidden relative">
+          <GlassCard className="!p-8 space-y-8 border-2 border-slate-50 shadow-[0_20px_60px_rgba(0,0,0,0.02)] rounded-[2.75rem] overflow-hidden relative text-left">
             <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/[0.03] rounded-full blur-[90px] pointer-events-none -mr-32 -mt-32" />
             
-            <div className="space-y-6">
+            <div className="space-y-4">
               <Input
                 label="Full Name"
                 placeholder="Enter patient's name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 required
-                className="bg-slate-50/30 border-slate-100 focus:bg-white h-14"
+                className="bg-slate-50/30 border-slate-100 focus:bg-white h-14 font-black italic tracking-tight"
               />
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Input
                     label="Contact No."
@@ -116,7 +116,7 @@ export const AddPatient = () => {
                     onChange={handlePhoneChange}
                     required
                     className={cn(
-                        "bg-slate-50/30 border-slate-100 focus:bg-white transition-all h-14",
+                        "bg-slate-50/30 border-slate-100 focus:bg-white transition-all h-14 font-black italic tracking-tight",
                         phoneError ? "border-rose-200 focus:border-rose-400" : "focus:border-indigo-400"
                     )}
                   />
@@ -136,7 +136,7 @@ export const AddPatient = () => {
                   value={formData.age}
                   onChange={(e) => setFormData({ ...formData, age: e.target.value })}
                   required
-                  className="bg-slate-50/30 border-slate-100 focus:bg-white h-14"
+                  className="bg-slate-50/30 border-slate-100 focus:bg-white h-14 font-black italic tracking-tight"
                 />
               </div>
 
@@ -149,7 +149,7 @@ export const AddPatient = () => {
                 ]}
                 value={formData.gender}
                 onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                className="bg-slate-50/30 border-slate-100 h-14"
+                className="bg-slate-50/30 border-slate-100 h-14 font-black italic tracking-tight"
               />
 
               <Textarea
@@ -158,7 +158,7 @@ export const AddPatient = () => {
                 value={formData.address}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                 required
-                className="min-h-[140px] bg-slate-50/30 border-slate-100 focus:bg-white transition-all resize-none"
+                className="min-h-[140px] bg-slate-50/30 border-slate-100 focus:bg-white transition-all resize-none font-bold italic"
               />
             </div>
             
@@ -312,20 +312,20 @@ export const EditPatient = () => {
           onSubmit={handleSubmit} 
           className="space-y-10 px-4"
         >
-          <GlassCard className="!p-8 space-y-8 border-2 border-slate-50 shadow-[0_20px_60px_rgba(0,0,0,0.02)] rounded-[2.75rem] overflow-hidden relative">
+          <GlassCard className="!p-8 space-y-8 border-2 border-slate-50 shadow-[0_20px_60px_rgba(0,0,0,0.02)] rounded-[2.75rem] overflow-hidden relative text-left">
             <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/[0.03] rounded-full blur-[80px] pointer-events-none -mr-32 -mt-32" />
             
-            <div className="space-y-6">
+            <div className="space-y-4">
               <Input
                 label="Full Name"
                 placeholder="Enter patient's name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 required
-                className="bg-slate-50/30 border-slate-100 focus:bg-white h-14"
+                className="bg-slate-50/30 border-slate-100 focus:bg-white h-14 font-black italic tracking-tight"
               />
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Input
                     label="Contact No."
@@ -335,7 +335,7 @@ export const EditPatient = () => {
                     onChange={handlePhoneChange}
                     required
                     className={cn(
-                        "bg-slate-50/30 border-slate-100 focus:bg-white transition-all h-14",
+                        "bg-slate-50/30 border-slate-100 focus:bg-white transition-all h-14 font-black italic tracking-tight",
                         phoneError ? "border-rose-200 focus:border-rose-400" : "focus:border-indigo-400"
                     )}
                   />
@@ -355,7 +355,7 @@ export const EditPatient = () => {
                   value={formData.age}
                   onChange={(e) => setFormData({ ...formData, age: e.target.value })}
                   required
-                  className="bg-slate-50/30 border-slate-100 focus:bg-white h-14"
+                  className="bg-slate-50/30 border-slate-100 focus:bg-white h-14 font-black italic tracking-tight"
                 />
               </div>
 
@@ -368,7 +368,7 @@ export const EditPatient = () => {
                 ]}
                 value={formData.gender}
                 onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                className="bg-slate-50/30 border-slate-100 h-14"
+                className="bg-slate-50/30 border-slate-100 h-14 font-black italic tracking-tight"
               />
 
               <Textarea
@@ -377,7 +377,7 @@ export const EditPatient = () => {
                 value={formData.address}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                 required
-                className="min-h-[140px] bg-slate-50/30 border-slate-100 focus:bg-white transition-all resize-none"
+                className="min-h-[140px] bg-slate-50/30 border-slate-100 focus:bg-white transition-all resize-none font-bold italic"
               />
             </div>
             
@@ -539,7 +539,7 @@ export const PatientList = () => {
           <AnimatePresence mode="popLayout">
             {filteredPatients.map((patient: any, idx: number) => (
               <motion.div
-                  key={patient.id}
+                  key={`${patient.id || 'patient'}-${idx}`}
                   layout
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}

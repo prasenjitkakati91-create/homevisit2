@@ -98,6 +98,7 @@ export const MedicalRecordUpload: React.FC<MedicalRecordUploadProps> = ({ patien
       />
 
       <motion.div
+        id="medical-upload-trigger"
         layout
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}

@@ -418,9 +418,11 @@ export const sessionService = {
         const data = doc.data();
         const isCompleted = !data.treatmentDone || !data.treatmentDone.startsWith('Scheduled:');
         
-        totalEarnings += data.amountPaid || 0;
+        if (data.paymentStatus === 'Paid') {
+          totalEarnings += Number(data.amountPaid) || 0;
+        }
         if (data.paymentStatus === 'Pending') {
-          pendingPayments += (data.sessionFee || 500); // fallback fee
+          pendingPayments += (Number(data.amountPaid) || Number(data.sessionFee) || 500); // fallback fee
         }
         if (data.date === today && isCompleted) {
           todaySessionsCount++;

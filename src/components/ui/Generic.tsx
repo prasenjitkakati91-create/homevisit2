@@ -113,7 +113,8 @@ export const Input: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { lab
     {label && <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">{label}</label>}
     <input
       className={cn(
-        'w-full px-5 py-4 bg-white/50 backdrop-blur-xl border border-white/80 rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] outline-hidden focus:border-blue-400 focus:ring-4 focus:ring-blue-400/10 transition-all text-sm font-medium placeholder:text-slate-400',
+        'w-full px-5 py-4 bg-white/50 backdrop-blur-xl border border-white/80 rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] outline-hidden focus:border-blue-400 focus:ring-4 focus:ring-blue-400/10 transition-all text-sm font-medium placeholder:text-slate-400 text-slate-900',
+        props.type === 'date' && 'min-h-[56px] [color-scheme:light]',
         className
       )}
       {...props}

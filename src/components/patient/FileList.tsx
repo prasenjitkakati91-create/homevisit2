@@ -14,8 +14,6 @@ interface FileListProps {
 
 export const FileList: React.FC<FileListProps> = ({ patientId, files, onDeleteSuccess }) => {
   const handleDelete = async (fileId: string, storagePath: string) => {
-    if (!window.confirm('Permanent Delete: Are you sure you want to remove this medical record?')) return;
-
     try {
       toast.loading('Removing record...', { id: 'delete-toast' });
       await uploadService.deleteFile(patientId, fileId, storagePath);

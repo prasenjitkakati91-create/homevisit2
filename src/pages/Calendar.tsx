@@ -12,11 +12,11 @@ export const CalendarPage = () => {
     const { searchQuery } = useSearch();
     const [allSessions, setAllSessions] = React.useState<any[]>([]);
     const [allPatients, setAllPatients] = React.useState<any[]>([]);
+    const [patientCases, setPatientCases] = React.useState<any[]>([]);
     const [loading, setLoading] = React.useState(true);
-    const [currentDate, setCurrentDate] = React.useState(new Date());
     const [selectedDate, setSelectedDate] = React.useState(new Date());
     const [isScheduling, setIsScheduling] = React.useState(false);
-    const [scheduleData, setScheduleData] = React.useState({ patientId: '', time: '10:00', notes: '' });
+    const [scheduleData, setScheduleData] = React.useState({ patientId: '', caseId: '', time: '10:00', notes: '' });
     const [schedulingLoading, setSchedulingLoading] = React.useState(false);
     
     // Completion popup state
@@ -48,79 +48,23 @@ export const CalendarPage = () => {
         fetchData();
     }, []);
 
-    const daysInMonth = (date: Date) => {
-        return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-    };
-
-    const firstDayOfMonth = (date: Date) => {
-        return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
-    };
-
-    const prevMonth = () => {
-        setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
-    };
-
-    const nextMonth = () => {
-        setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
-    };
+    React.useEffect(() => {
+        if (scheduleData.patientId) {
+            caseService.getCases(scheduleData.patientId).then(cases => {
+                setPatientCases(cases || []);
+                const activeCase = cases?.find((c: any) => c.status === 'Active');
+                setScheduleData(prev => ({ ...prev, caseId: activeCase ? activeCase.id : (cases && cases.length > 0 ? cases[0].id : '') }));
+            });
+        } else {
+            setPatientCases([]);
+            setScheduleData(prev => ({ ...prev, caseId: '' }));
+        }
+    }, [scheduleData.patientId]);
 
     const getSessionsForDate = (date: Date) => {
         const dateStr = date.toISOString().split('T')[0];
         return allSessions.filter(s => s.date === dateStr);
     };
-
-    const monthName = currentDate.toLocaleString('default', { month: 'long' });
-    const year = currentDate.getFullYear();
-
-    const days = [];
-    const totalDays = daysInMonth(currentDate);
-    const startOffset = firstDayOfMonth(currentDate);
-
-    // Add empty slots for start offset
-    for (let i = 0; i < startOffset; i++) {
-        days.push(<div key={`empty-${i}`} className="h-10 w-full" />);
-    }
-
-    // Add actual days
-    for (let day = 1; day <= totalDays; day++) {
-        const dateObj = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-        const daySessions = getSessionsForDate(dateObj);
-        const isToday = dateObj.toISOString().split('T')[0] === new Date().toISOString().split('T')[0];
-        const isSelected = dateObj.toISOString().split('T')[0] === selectedDate.toISOString().split('T')[0];
-
-        days.push(
-            <button 
-                key={day}
-                onClick={() => setSelectedDate(dateObj)}
-                className={cn(
-                    "group h-12 w-full flex flex-col items-center justify-center rounded-[1.25rem] relative transition-all active:scale-95 cursor-pointer overflow-hidden mb-1",
-                    isSelected ? "text-white" : 
-                    isToday ? "bg-blue-50/50 text-blue-600" : "text-slate-600 hover:bg-slate-50"
-                )}
-            >
-                {isSelected && (
-                    <motion.div 
-                        layoutId="calendar-selection" 
-                        className="absolute inset-0 bg-slate-900"
-                        initial={false}
-                        transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                    />
-                )}
-                <span className={cn(
-                    "text-sm font-black z-10 transition-colors", 
-                    isSelected ? "text-white" : "group-hover:text-slate-900"
-                )}>
-                    {day}
-                </span>
-                {daySessions.length > 0 && (
-                    <div className={cn(
-                        "absolute bottom-2 w-1 h-1 rounded-full z-10 transition-all",
-                        isSelected ? "bg-blue-400 scale-125" : "bg-blue-500/40"
-                    )} />
-                )}
-            </button>
-        );
-    }
 
     const filteredVisits = getSessionsForDate(selectedDate).filter(visit => 
         !searchQuery || 
@@ -135,10 +79,11 @@ export const CalendarPage = () => {
         setSchedulingLoading(true);
         try {
             const patient = allPatients.find(p => p.id === scheduleData.patientId);
-            const cases = await caseService.getCases(scheduleData.patientId);
-            let activeCase: any = cases?.find((c: any) => c.status === 'Active');
             
-            if (!activeCase) {
+            let activeCaseId = scheduleData.caseId;
+            let activeCase: any = null;
+
+            if (!activeCaseId) {
                 const newCaseRef = await caseService.addCase(scheduleData.patientId, {
                     diagnosis: scheduleData.notes || 'General Consultation',
                     condition: 'Orthopedic',
@@ -149,10 +94,14 @@ export const CalendarPage = () => {
                     notes: 'Auto-generated for scheduled appointment'
                 });
                 activeCase = { id: newCaseRef!.id } as any;
+                activeCaseId = newCaseRef!.id;
+            } else {
+                activeCase = patientCases.find(c => c.id === activeCaseId) || { id: activeCaseId } as any;
             }
 
-            await sessionService.addSession(scheduleData.patientId, activeCase.id, {
+            await sessionService.addSession(scheduleData.patientId, activeCaseId, {
                 date: selectedDate.toISOString().split('T')[0],
+                time: scheduleData.time,
                 painScore: 0,
                 treatmentDone: `Scheduled: ${scheduleData.notes}`,
                 notes: scheduleData.notes,
@@ -162,9 +111,15 @@ export const CalendarPage = () => {
                 patientName: patient?.name
             });
 
+            const existingSessions = await sessionService.getSessions(scheduleData.patientId, activeCaseId);
+            const newTotal = existingSessions.length;
+            if (activeCase.expectedSessions && newTotal > Number(activeCase.expectedSessions || 0)) {
+                await caseService.updateCase(scheduleData.patientId, activeCaseId, { expectedSessions: newTotal.toString() });
+            }
+
             toast.success("Appointment scheduled!");
             setIsScheduling(false);
-            setScheduleData({ patientId: '', time: '10:00', notes: '' });
+            setScheduleData({ patientId: '', caseId: '', time: '10:00', notes: '' });
             
             // Refresh sessions
             const sessions = await sessionService.getAllSessions();
@@ -209,34 +164,26 @@ export const CalendarPage = () => {
                 <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-none italic font-display">Clinical <span className="not-italic text-blue-800">Calendar</span></h1>
             </div>
 
-            {/* Calendar Widget */}
-            <div className="bg-white rounded-[2.5rem] p-6 shadow-xl shadow-indigo-900/5 border border-indigo-100/50 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-[40px] pointer-events-none" />
-                <div className="flex items-center justify-between mb-8 relative z-10">
-                    <div className="space-y-0.5">
-                        <h3 className="text-xl font-black text-slate-900 leading-none tracking-tight">{monthName}</h3>
-                        <p className="text-[10px] font-bold text-blue-500 uppercase tracking-widest">{year}</p>
+            {/* Date Selector */}
+            <div className="relative inline-flex items-center">
+                <input 
+                    type="date" 
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    value={selectedDate.toISOString().split('T')[0]}
+                    onChange={(e) => {
+                        if (e.target.value) {
+                            setSelectedDate(new Date(e.target.value));
+                        }
+                    }}
+                />
+                <div className="bg-white rounded-xl px-3 py-2 shadow-sm border border-slate-200 flex items-center gap-2.5 hover:border-blue-300 hover:shadow-md transition-all">
+                    <div className="w-7 h-7 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center shrink-0">
+                        <CalendarIcon size={14} strokeWidth={2.5} />
                     </div>
-                    <div className="flex items-center gap-2">
-                        <button onClick={prevMonth} className="w-10 h-10 flex items-center justify-center bg-slate-50 border border-slate-100 rounded-[1.25rem] text-slate-400 hover:text-blue-600 transition-colors active:scale-95 cursor-pointer">
-                            <ChevronLeft size={18} strokeWidth={2.5} />
-                        </button>
-                        <button onClick={nextMonth} className="w-10 h-10 flex items-center justify-center bg-slate-50 border border-slate-100 rounded-[1.25rem] text-slate-400 hover:text-blue-600 transition-colors active:scale-95 cursor-pointer">
-                            <ChevronRight size={18} strokeWidth={2.5} />
-                        </button>
+                    <div className="flex flex-col pr-2">
+                        <span className="text-[8px] font-black uppercase text-slate-400 tracking-widest leading-none mb-1">Select Date</span>
+                        <span className="text-[13px] font-bold text-slate-900 leading-none">{selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                     </div>
-                </div>
-
-                <div className="grid grid-cols-7 gap-1 mb-3 relative z-10">
-                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, idx) => (
-                        <div key={`${day}-${idx}`} className="h-6 flex items-center justify-center">
-                            <span className="text-[8px] font-black uppercase text-slate-300 tracking-widest">{day}</span>
-                        </div>
-                    ))}
-                </div>
-
-                <div className="grid grid-cols-7 gap-1 relative z-10">
-                    {days}
                 </div>
             </div>
 
@@ -285,7 +232,7 @@ export const CalendarPage = () => {
                         <AnimatePresence mode="popLayout">
                             {filteredVisits.map((visit, idx) => (
                                 <motion.div
-                                    key={visit.id}
+                                    key={`${visit.id || 'visit'}-${idx}`}
                                     layout
                                     initial={{ opacity: 0, scale: 0.95 }}
                                     animate={{ opacity: 1, scale: 1 }}
@@ -367,48 +314,83 @@ export const CalendarPage = () => {
                             animate={{ opacity: 1, height: 'auto' }}
                             exit={{ opacity: 0, height: 0 }}
                         >
-                            <GlassCard className="!p-8 relative overflow-visible mt-2">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-[40px] pointer-events-none" />
-                                <form onSubmit={handleSchedule} className="space-y-6 relative z-10">
-                                    <Select 
-                                        label="Select Patient"
-                                        required
-                                        value={scheduleData.patientId}
-                                        onChange={e => setScheduleData({...scheduleData, patientId: e.target.value})}
-                                        options={[
-                                            { label: 'Select Patient...', value: '' },
-                                            ...allPatients.map(p => ({ label: p.name, value: p.id }))
-                                        ]}
-                                    />
+                            <div className="bg-slate-50 border border-slate-100 rounded-[2.5rem] p-6 relative overflow-visible mt-2 shadow-[0_8px_30px_rgba(0,0,0,0.03)]">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-[40px] pointer-events-none" />
+                                <form onSubmit={handleSchedule} className="space-y-5 relative z-10">
+                                    <div className="space-y-4">
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Patient</label>
+                                            <Select 
+                                                required
+                                                value={scheduleData.patientId}
+                                                onChange={e => setScheduleData({...scheduleData, patientId: e.target.value})}
+                                                options={[
+                                                    { label: 'Select Patient...', value: '' },
+                                                    ...allPatients.map(p => ({ label: p.name, value: p.id }))
+                                                ]}
+                                                className="!bg-white !rounded-2xl border-slate-200"
+                                            />
+                                        </div>
+
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Care Cycle</label>
+                                            <Select 
+                                                value={scheduleData.caseId}
+                                                onChange={e => setScheduleData({...scheduleData, caseId: e.target.value})}
+                                                disabled={!scheduleData.patientId}
+                                                options={[
+                                                    { label: patientCases.length > 0 ? 'Select Care Cycle...' : 'No active cycle (New will be created)', value: '' },
+                                                    ...patientCases.map(c => ({ label: `${c.diagnosis} (${c.status})`, value: c.id }))
+                                                ]}
+                                                className="!bg-white !rounded-2xl border-slate-200"
+                                            />
+                                        </div>
+                                    </div>
                                     
                                     <div className="grid grid-cols-2 gap-4">
-                                        <Input 
-                                            label="Time (Optional)"
-                                            type="time"
-                                            value={scheduleData.time}
-                                            onChange={e => setScheduleData({...scheduleData, time: e.target.value})}
-                                        />
-                                        <Input 
-                                            label="Date"
-                                            type="date"
-                                            value={selectedDate.toISOString().split('T')[0]}
-                                            disabled
-                                        />
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Time</label>
+                                            <Input 
+                                                type="time"
+                                                value={scheduleData.time}
+                                                onChange={e => setScheduleData({...scheduleData, time: e.target.value})}
+                                                className="!bg-white !rounded-2xl border-slate-200"
+                                            />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Date</label>
+                                            <Input 
+                                                type="date"
+                                                value={selectedDate.toISOString().split('T')[0]}
+                                                disabled
+                                                className="!opacity-70 !bg-slate-100 !rounded-2xl border-slate-200"
+                                            />
+                                        </div>
                                     </div>
 
-                                    <Input 
-                                        label="Notes / Reason"
-                                        placeholder="Consultation, follow-up..."
-                                        value={scheduleData.notes}
-                                        onChange={e => setScheduleData({...scheduleData, notes: e.target.value})}
-                                    />
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Notes</label>
+                                        <Input 
+                                            placeholder="Consultation, follow-up..."
+                                            value={scheduleData.notes}
+                                            onChange={e => setScheduleData({...scheduleData, notes: e.target.value})}
+                                            className="!bg-white !rounded-2xl border-slate-200"
+                                        />
+                                    </div>
                                     
                                     <div className="flex gap-3 pt-2">
-                                        <Button type="button" variant="outline" className="flex-1 py-5 rounded-[2rem] bg-white border-slate-200" onClick={() => setIsScheduling(false)}>Cancel</Button>
-                                        <Button type="submit" variant="primary" className="flex-1 py-5 rounded-[2rem] shadow-[0_4px_15px_-4px_rgba(37,99,235,0.4)]" loading={schedulingLoading}>Confirm</Button>
+                                        <button type="button" className="flex-1 py-4 text-sm font-bold text-slate-600 bg-white border border-slate-200 rounded-[1.25rem] hover:bg-slate-100 active:scale-95 transition-all cursor-pointer" onClick={() => setIsScheduling(false)}>Cancel</button>
+                                        <button disabled={schedulingLoading} type="submit" className="flex-1 py-4 text-sm font-bold text-white bg-blue-600 rounded-[1.25rem] hover:bg-blue-700 active:scale-95 transition-all cursor-pointer shadow-[0_4px_15px_-4px_rgba(37,99,235,0.4)] flex items-center justify-center gap-2">
+                                            {schedulingLoading ? (
+                                                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                            ) : (
+                                                <CheckCircle size={18} strokeWidth={2.5} />
+                                            )}
+                                            Confirm
+                                        </button>
                                     </div>
                                 </form>
-                            </GlassCard>
+                            </div>
                         </motion.div>
                     )}
                 </AnimatePresence>
