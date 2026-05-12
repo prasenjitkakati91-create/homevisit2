@@ -153,7 +153,7 @@ export const Payments = () => {
                             className="bg-white/10 text-white border border-white/10 rounded-xl px-2.5 py-1.5 text-xs font-bold focus:ring-0 outline-none backdrop-blur-md appearance-none"
                         />
                         <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/10 shadow-inner hidden sm:flex">
-                            <TrendingUp size={20} strokeWidth={2.5} className="text-emerald-400" />
+                            <TrendingUp size={16} strokeWidth={2.5} className="text-emerald-400" />
                         </div>
                     </div>
                 </div>
@@ -337,7 +337,7 @@ export const Payments = () => {
 
                 <div className="space-y-3">
                     {txLoading ? (
-                        [1, 2, 3].map(i => <div key={i} className="h-24 bg-white/50 backdrop-blur-md rounded-[2rem] skeleton border-none" />)
+                        [1, 2, 3].map(i => <div key={`pay-skeleton-${i}`} className="h-24 bg-white/50 backdrop-blur-md rounded-[2rem] skeleton border-none" />)
                     ) : filteredTransactions.length === 0 ? (
                         <GlassCard className="!p-12 border-dashed border-slate-200 text-center space-y-4">
                             <div className="w-16 h-16 bg-white/50 rounded-3xl flex items-center justify-center text-slate-300 shadow-sm border border-white mx-auto">

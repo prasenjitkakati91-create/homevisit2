@@ -198,7 +198,7 @@ export const CalendarPage = () => {
 
                 {loading ? (
                     <div className="space-y-3">
-                        {[1, 2].map(i => <div key={i} className="h-24 bg-white/50 backdrop-blur-md rounded-[2rem] skeleton border-none" />)}
+                        {[1, 2].map(i => <div key={`cal-skeleton-${i}`} className="h-24 bg-white/50 backdrop-blur-md rounded-[2rem] skeleton border-none" />)}
                     </div>
                 ) : filteredVisits.length === 0 ? (
                     <motion.div 
@@ -363,7 +363,7 @@ export const CalendarPage = () => {
                                                 type="date"
                                                 value={selectedDate.toISOString().split('T')[0]}
                                                 disabled
-                                                className="!opacity-70 !bg-slate-100 !rounded-2xl border-slate-200"
+                                                className="!opacity-70 !bg-slate-100 !rounded-2xl border-slate-200 !px-3 !py-2 !text-xs"
                                             />
                                         </div>
                                     </div>

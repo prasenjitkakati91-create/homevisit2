@@ -143,14 +143,14 @@ export const Dashboard = () => {
         <div className="h-48 bg-slate-100 rounded-[3rem] p-7 space-y-4 skeleton border-none"></div>
         <div className="grid grid-cols-2 gap-4">
           {[1, 2].map(i => (
-            <div key={i} className="h-36 bg-slate-100 rounded-[2.5rem] p-5 skeleton border-none"></div>
+            <div key={`dash-1-${i}`} className="h-36 bg-slate-100 rounded-[2.5rem] p-5 skeleton border-none"></div>
           ))}
         </div>
         <div className="space-y-4">
             <div className="h-4 w-24 bg-slate-100 rounded skeleton" />
             <div className="space-y-3">
                 {[1, 2, 3].map(i => (
-                    <div key={i} className="h-20 bg-slate-100 rounded-[2.5rem] p-4 skeleton border-none"></div>
+                    <div key={`dash-2-${i}`} className="h-20 bg-slate-100 rounded-[2.5rem] p-4 skeleton border-none"></div>
                 ))}
             </div>
         </div>
