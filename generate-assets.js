@@ -11,7 +11,8 @@ async function generateAssets() {
   const svgContent = fs.readFileSync(path.join(process.cwd(), "public/icon.svg"), "utf8");
 
   console.log("Generating icon.png...");
-  await sharp(Buffer.from(svgContent))
+  const fullBleedSvg = svgContent.replace('rx="128"', '');
+  await sharp(Buffer.from(fullBleedSvg))
     .resize(1024, 1024)
     .png()
     .toFile(path.join(assetsDir, "icon.png"));
